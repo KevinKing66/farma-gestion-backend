@@ -2,5 +2,6 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 mysql-connector-python
+pymysql
 sqlacodegen
 pydantic[email]
