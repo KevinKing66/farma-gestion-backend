@@ -10,3 +10,4 @@ pydantic
 asyncmy 
 python-dotenv
 pydantic_settings
+bcrytp
