@@ -1,11 +1,11 @@
-from src.config.base import Base
-from sqlalchemy import Column, Integer, String
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional
 
-class User(Base):
-    __tablename__ = "users"
-
-    id_usuario = Column(Integer, primary_key=True, index=True)
-    nombre_completo = Column(String(128), nullable=False)
-    correo = Column(String(128), unique=True, index=True, nullable=False)
-    rol = Column(String(16), nullable=False)
-    contrasena = Column(String(2048), nullable=False)
+class User(BaseModel):
+    id: Optional[int] = Field(default=None, description="ID autogenerado del usuario", alias="id_usuario")
+    fullname: str = Field(..., alias="nombre_completo",min_length=1)
+    email: EmailStr = Field(..., alias="correo")
+    role: str = Field(...,alias="rol" , min_length=1)
+    password: str = Field(...,alias="contrasena" , min_length=6)
+    class Config:
+        allow_population_by_field_name = True  # Permite usar tanto el alias como el nombre en inglés

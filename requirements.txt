@@ -4,4 +4,9 @@ sqlalchemy
 mysql-connector-python
 pymysql
 sqlacodegen
-pydantic[email]
+fastapi 
+uvicorn 
+pydantic 
+asyncmy 
+python-dotenv
+pydantic_settings
