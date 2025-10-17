@@ -8,4 +8,4 @@ Este es el backend del proyecto farma gestion, el cual está dirigido a solucion
 `sqlacodegen mysql+mysqlconnector://farmagestion_user:password123@localhost:3306/farmagestion > app/models/models.py`
 
 ## correr aplicacion
-`python -m uvicorn main:app reload`
+`python -m uvicorn main:app --reload`
