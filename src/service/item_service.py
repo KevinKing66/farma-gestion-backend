@@ -66,7 +66,6 @@ def delete_item(id_item):
 def update_location(id_item, id_location):
     current = get_item_by_id(id_item)
 
-    print("--------------CURRENT:", current)
     if current is None:
         raise Exception("Item no encontrado")
     
