@@ -29,6 +29,13 @@ def update(id_item, data):
     )
     return {"message": "Item actualizado correctamente"}
 
+def update_location(id_item, data):
+    item_service.update_location(
+        id_item,
+        data["id_ubicacion"]
+    )
+    return {"message": "Item actualizado correctamente"}
+
 def delete(id_item):
     item_service.delete_item(id_item)
     return {"message": "Item eliminado correctamente"}

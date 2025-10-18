@@ -7,6 +7,7 @@ def get_one(id_ubicacion):
     return ubicacion_service.get_ubicacion_by_id(id_ubicacion)
 
 def create(data):
+    print("------------entraaaaaaaaaaaaaaaaaaa")
     ubicacion_service.create_ubicacion(
         data["nombre"],
         data.get("tipo", "ALMACEN"),

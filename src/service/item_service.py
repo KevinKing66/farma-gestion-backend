@@ -61,3 +61,17 @@ def delete_item(id_item):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+def update_location(id_item, id_location):
+    current = get_item_by_id(id_item)
+    if current is None:
+        raise Exception("Item no encontrado")
+    
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""CALL sp_actualizar_items(%s, %s, %s, %s, %s, %s, %s)""", (id_item, id_location, current["descripcion"], current["tipo_item"], current["unidad_medida"], current["stock_minimo"]))
+    result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return result
