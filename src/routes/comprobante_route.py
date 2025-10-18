@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import comprobante_controller
+from src.controllers import comprobante_controller
 
 router = APIRouter(prefix="/comprobantes")
 

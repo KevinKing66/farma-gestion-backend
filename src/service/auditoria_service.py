@@ -1,4 +1,4 @@
-from database.connection import get_connection
+from src.config.database import get_connection
 
 def get_all_auditorias():
     conn = get_connection()

@@ -1,4 +1,4 @@
-from services import item_service
+from src.service import item_service
 
 def get_all():
     return item_service.get_all_items()

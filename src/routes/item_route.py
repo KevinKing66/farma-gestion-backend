@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import item_controller
+from src.controllers import item_controller
 
 router = APIRouter(prefix="/items")
 

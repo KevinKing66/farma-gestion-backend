@@ -7,7 +7,7 @@ sqlacodegen
 fastapi 
 uvicorn 
 pydantic 
-asyncmy 
+aiomysql
 python-dotenv
 pydantic_settings
-bcrytp
+bcrypt

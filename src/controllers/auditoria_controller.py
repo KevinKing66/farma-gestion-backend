@@ -1,4 +1,4 @@
-from services import auditoria_service
+from src.service import auditoria_service
 
 def get_all():
     return auditoria_service.get_all_auditorias()

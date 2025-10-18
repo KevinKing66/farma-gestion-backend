@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import proveedor_controller
+from src.controllers import proveedor_controller
 
 router = APIRouter(prefix="/proveedores")
 

@@ -1,4 +1,4 @@
-from services import lote_service
+from src.service import lote_service
 
 def get_all():
     return lote_service.get_all_lotes()

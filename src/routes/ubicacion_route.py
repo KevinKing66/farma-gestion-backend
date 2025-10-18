@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import ubicacion_controller
+from src.controllers import ubicacion_controller
 
 router = APIRouter(prefix="/ubicaciones")
 

@@ -1,4 +1,4 @@
-from services import ubicacion_service
+from src.service import ubicacion_service
 
 def get_all():
     return ubicacion_service.get_all_ubicaciones()

@@ -1,4 +1,4 @@
-from services import notificacion_service
+from src.service import notificacion_service
 
 def get_all():
     return notificacion_service.get_all_notificaciones()

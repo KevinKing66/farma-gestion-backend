@@ -1,4 +1,4 @@
-from services import existencia_service
+from src.service import existencia_service
 
 def get_all():
     return existencia_service.get_all_existencias()

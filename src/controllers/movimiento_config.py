@@ -1,4 +1,4 @@
-from services import movimientos_service
+from src.service import movimientos_service
 
 def get_all():
     return movimientos_service.get_all()

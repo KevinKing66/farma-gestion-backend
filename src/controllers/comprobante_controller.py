@@ -1,4 +1,4 @@
-from services import comprobante_service
+from src.service import comprobante_service
 
 def get_all():
     return comprobante_service.get_all()

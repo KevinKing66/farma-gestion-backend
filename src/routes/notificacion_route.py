@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import notificacion_controller
+from src.controllers import notificacion_controller
 
 router = APIRouter(prefix="/notificaciones")
 

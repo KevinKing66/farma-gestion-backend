@@ -1,5 +1,5 @@
 import json
-from database.connection import get_connection
+from src.config.database import get_connection
 
 def get_all_notificaciones():
     conn = get_connection()

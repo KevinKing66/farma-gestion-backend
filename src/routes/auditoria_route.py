@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import auditoria_controller
+from src.controllers import auditoria_controller
 
 router = APIRouter(prefix="/auditoria")
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import existencia_controller
+from src.controllers import existencia_controller
 
 router = APIRouter(prefix="/existencias")
 

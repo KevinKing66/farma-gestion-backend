@@ -1,4 +1,4 @@
-from services import stg_inventario_service
+from src.service import stg_inventario_service
 
 def get_all():
     return stg_inventario_service.get_all_registros()

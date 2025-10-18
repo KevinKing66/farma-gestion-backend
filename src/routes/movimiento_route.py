@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import movimientos_controller
+from src.controllers import movimientos_controller
 
 router = APIRouter(prefix="/movimientos")
 

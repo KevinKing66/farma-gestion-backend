@@ -1,4 +1,4 @@
-from services import proveedor_service
+from src.service import proveedor_service
 
 def get_all():
     return proveedor_service.get_all_proveedores()

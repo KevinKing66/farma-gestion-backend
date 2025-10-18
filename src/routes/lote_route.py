@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import lote_controller
+from src.controllers import lote_controller
 
 router = APIRouter(prefix="/lotes")
 

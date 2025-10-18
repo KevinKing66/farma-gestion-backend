@@ -1,4 +1,4 @@
-from database.connection import get_connection
+from src.config.database import get_connection
 
 def get_all_lotes():
     conn = get_connection()

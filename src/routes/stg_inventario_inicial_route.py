@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import stg_inventario_controller
+from src.controllers import stg_inventario_controller
 
 router = APIRouter(prefix="/stg_inventario")
 

@@ -1,4 +1,4 @@
-from services import usuario_service
+from src.service import usuario_service
 
 def get_all():
     return usuario_service.get_all_usuarios()
