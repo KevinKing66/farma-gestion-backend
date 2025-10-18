@@ -65,13 +65,45 @@ def delete_item(id_item):
 
 def update_location(id_item, id_location):
     current = get_item_by_id(id_item)
+
+    print("--------------CURRENT:", current)
     if current is None:
         raise Exception("Item no encontrado")
     
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("""CALL sp_actualizar_items(%s, %s, %s, %s, %s, %s, %s)""", (id_item, id_location, current["descripcion"], current["tipo_item"], current["unidad_medida"], current["stock_minimo"]))
+
+    cursor.execute("""CALL sp_actualizar_items(%s, %s, %s, %s, %s, %s, %s)""", 
+                   (id_item, 
+                    id_location, 
+                    current.get("codigo", None),
+                    current.get("descripcion", None), 
+                    current.get("tipo_item", None), 
+                    current.get("unidad_medida", None), 
+                    current.get("stock_minimo", None)))
     result = cursor.fetchall()
     cursor.close()
     conn.close()
     return result
+
+
+# CREATE PROCEDURE sp_actualizar_items(
+#   IN p_id_item      INT,
+#   IN p_id_ubicacion INT,
+#   IN p_codigo       VARCHAR(50),
+#   IN p_descripcion  VARCHAR(255),
+#   IN p_tipo_item    VARCHAR(15),
+#   IN p_unidad       VARCHAR(20),
+#   IN p_stock_minimo INT
+# )
+
+    {
+        "id_item": 1,
+        "id_ubicacion": 2,
+        "codigo": "COD001",
+        "descripcion": "Item 1",
+        "tipo_item": "DISPOSITIVO",
+        "unidad_medida": "UND",
+        "stock_minimo": 11,
+        "nombre_ubicacion": "Ubicacion 2"
+    },

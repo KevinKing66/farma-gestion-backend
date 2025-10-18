@@ -20,7 +20,7 @@ def create(data):
 def update(id_item, data):
     item_service.update_item(
         id_item,
-        data["id_ubicacion"],
+        data.get("id_ubicacion", None),
         data.get("codigo", None),
         data["descripcion"],
         data["tipo_item"],
