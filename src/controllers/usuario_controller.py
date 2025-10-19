@@ -1,34 +1,27 @@
 from src.service import usuario_service
+from src.schemas.usuario_schema import Login, UsuarioCreate, UsuarioUpdate
 
 def get_all():
     return usuario_service.get_all_usuarios()
 
-def get_one(id_usuario):
+def get_one(id_usuario: int):
     return usuario_service.get_usuario_by_id(id_usuario)
 
-def create(data):
-    usuario_service.create_usuario(
-        data["nombre_completo"],
-        data["correo"],
-        data["rol"],
-        data["contrasena"],
-        data.get("intentos_fallidos", 0),
-        data.get("bloqueado_hasta", None)
-    )
+def login(user: Login):
+    usuario_service.login(user)
     return {"message": "Usuario creado correctamente"}
 
-def update(id_usuario, data):
+def create(user: UsuarioCreate):
+    usuario_service.create_usuario(user)
+    return {"message": "Usuario creado correctamente"}
+
+def update(id_usuario, data: UsuarioUpdate):
     usuario_service.update_usuario(
         id_usuario,
-        data["nombre_completo"],
-        data["correo"],
-        data["rol"],
-        data["contrasena"],
-        data.get("intentos_fallidos", 0),
-        data.get("bloqueado_hasta", None)
+        data
     )
     return {"message": "Usuario actualizado correctamente"}
 
-def delete(id_usuario):
+def delete(id_usuario: int):
     usuario_service.delete_usuario(id_usuario)
     return {"message": "Usuario eliminado correctamente"}
