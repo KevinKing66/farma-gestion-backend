@@ -25,5 +25,5 @@ def delete(id_item: int):
 
 
 @router.put("/change-location/{id}")
-def update(id: int, data: dict):
+def change_location(id: int, data: dict):
     return item_controller.update_location(id, data)
