@@ -8,8 +8,7 @@ def get_one(id_usuario: int):
     return usuario_service.get_usuario_by_id(id_usuario)
 
 def login(user: Login):
-    usuario_service.login(user)
-    return {"message": "Usuario creado correctamente"}
+    return usuario_service.login(user)
 
 def create(user: UsuarioCreate):
     usuario_service.create_usuario(user)
