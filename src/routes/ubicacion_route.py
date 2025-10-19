@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from src.schemas.ubicacion_schema import UbicacionCreate, UbicacionUpdate
 from src.controllers import ubicacion_controller
 
 router = APIRouter(prefix="/ubicaciones")
@@ -12,11 +13,11 @@ def get_one(id_ubicacion: int):
     return ubicacion_controller.get_one(id_ubicacion)
 
 @router.post("/")
-def create(data: dict):
+def create(data: UbicacionCreate):
     return ubicacion_controller.create(data)
 
 @router.put("/{id_ubicacion}")
-def update(id_ubicacion: int, data: dict):
+def update(id_ubicacion: int, data: UbicacionUpdate):
     return ubicacion_controller.update(id_ubicacion, data)
 
 @router.delete("/{id_ubicacion}")
