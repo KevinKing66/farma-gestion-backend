@@ -29,11 +29,6 @@ def insert_movimiento(
     id_ubicacion_destino,
     motivo
 ):
-    """
-    Registra el movimiento usando un procedimiento almacenado que:
-      - Inserta en movimientos_v2
-      - Actualiza existencias según el tipo
-    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.callproc("sp_registrar_movimiento", [

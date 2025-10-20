@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from src.schemas.auditoria_schema import AuditoriaBase
 from src.controllers import auditoria_controller
 
 router = APIRouter(prefix="/auditoria")
@@ -16,7 +17,7 @@ def get_by_tabla(tabla_afectada: str):
     return auditoria_controller.get_by_tabla(tabla_afectada)
 
 @router.post("/")
-def create(data: dict):
+def create(data: AuditoriaBase):
     return auditoria_controller.create(data)
 
 @router.delete("/{id_evento}")
