@@ -1380,41 +1380,42 @@ END //
 DELIMITER ;
 
 
-
+-- Proveedor
 CALL sp_crear_proveedores('Proveedor Ejemplo', '1234567890'); -- listo
 CALL sp_obtener_proveedores(1); -- listo
 CALL sp_listar_proveedores(); -- listo
 CALL sp_actualizar_proveedores(11, 'Proveedor Ejemplo', '1234567890'); -- listo
 CALL sp_eliminar_proveedores(12); -- listo
 
-
+-- Ubicacion
 CALL sp_crear_ubicaciones('almacen de ejemplo', 'ALMACEN', 1); -- listo
 CALL sp_obtener_ubicaciones(1); -- listo
 CALL sp_listar_ubicaciones(); -- listo
 CALL sp_actualizar_ubicaciones(11, 'almacen_ejemplo', 'ALMACEN', 0); -- listo
 CALL sp_eliminar_ubicaciones(11); -- listo
 
-
+-- item 
 CALL sp_crear_items(5,'EJM001','item de ejemplo', 'DISPOSITIVO', 'UND', 30);
 CALL sp_obtener_items(1); -- listo
 CALL sp_listar_items(); -- listo
 CALL sp_actualizar_items(13, 5, 'EJM001', 'Item_de_ejemplo', 'MEDICAMENTO', 'UND', 100); -- listo
 CALL sp_eliminar_items(13); -- listo
 
-
+-- lotes
 CALL sp_crear_lotes(1, 1, 'L011','2026-11-02', 12.00); -- listo
 CALL sp_obtener_lotes(2);
 CALL sp_listar_lotes(NULL); -- listo
 CALL sp_actualizar_lotes(1, '2025-12-31', 123.45); -- listo
 CALL sp_eliminar_lotes(11); -- listo
+
+-- usuarios
 CALL sp_crear_usuarios('Juan Pérez', 'juan.perez@ejemplo.com', 'ADMIN', '$2b$12$EjemploHashBcrypt1234567890'); -- listo
-
-
 CALL sp_obtener_usuarios(1); -- listo
 CALL sp_listar_usuarios(); -- listo
 CALL sp_actualizar_usuarios(1, 'Juan Pérez Actualizado', 'juan.actualizado@ejemplo.com', 'REGENTE', '$2b$12$NuevoHashBcrypt1234567890'); -- listo
 CALL sp_eliminar_usuarios(1); -- listo
 CALL sp_bloquear_usuarios(2, 15); -- listo
+
 
 CALL sp_crear_parametro('CLAVE1', 'VALOR1', 'Parámetro de prueba'); -- listo
 CALL sp_obtener_parametro('CLAVE1'); -- listo
@@ -1432,6 +1433,7 @@ CALL sp_listar_movimientos_por_lote(1);
 CALL sp_listar_movimientos_por_fecha('2025-12-31');
 CALL sp_actualizar_movimientos_v2(1, 'ALMACEN');
 CALL sp_eliminar_movimientos_v2(1);
+
 CALL sp_mov_registrar_ingreso(1, 1, 'COD001');
 CALL sp_mov_registrar_salida(1, 1, 1, 1, 1, 'Motivo de prueba');
 CALL sp_mov_transferir_stock(1, 1, 1, 1, 1, 'Motivo de prueba');

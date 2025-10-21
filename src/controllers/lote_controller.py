@@ -3,6 +3,9 @@ from src.service import lote_service
 def get_all():
     return lote_service.get_all_lotes()
 
+def get_all_by_lote():
+    return lote_service.get_all_lotes()
+
 def get_one(id_lote):
     return lote_service.get_lote_by_id(id_lote)
 

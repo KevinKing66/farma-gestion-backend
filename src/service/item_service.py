@@ -33,9 +33,9 @@ def create_item(id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, sto
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO items (id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo))
+        INSERT INTO items (codigo, descripcion, tipo_item, unidad_medida, stock_minimo)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (codigo, descripcion, tipo_item, unidad_medida, stock_minimo))
     conn.commit()
     cursor.close()
     conn.close()

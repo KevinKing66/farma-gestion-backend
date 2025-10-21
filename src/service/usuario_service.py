@@ -26,7 +26,7 @@ def get_all_usuarios():
     result = cursor.fetchall()
     cursor.close()
     conn.close()
-    return result
+    return [UsuarioResponse(**user) for user in result] # type: ignore
 
 
 def get_usuario_by_id(id_usuario):
@@ -36,7 +36,7 @@ def get_usuario_by_id(id_usuario):
     result = cursor.fetchone()
     cursor.close()
     conn.close()
-    return result
+    return UsuarioResponse(**result) # type: ignore
 
 def get_usuario_by_email(email: str) -> Usuario | None:
     conn = get_connection()
@@ -50,9 +50,9 @@ def get_usuario_by_email(email: str) -> Usuario | None:
 
 def create_usuario(user: UsuarioCreate):
     if get_usuario_by_email(user.correo) is not None:
-        raise Exception("Ya eciste un usuario con ese correo")
+        raise Exception("Ya existe un usuario con ese correo")
     
-    password = hash_password(user.correo)
+    password = hash_password(user.contrasena)
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -78,6 +78,7 @@ def login(user: Login) -> UsuarioResponse:
     return UsuarioResponse(**user_db.__dict__)
 
 def update_usuario(id_usuario, user: UsuarioUpdate):
+    password = hash_password(user.contrasena) # type: ignore
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -86,7 +87,7 @@ def update_usuario(id_usuario, user: UsuarioUpdate):
         SET nombre_completo=%s, correo=%s, rol=%s, contrasena=%s 
         WHERE id_usuario=%s
         """,
-        (user.nombre_completo, user.correo, user.rol, user.contrasena, id_usuario)
+        (user.nombre_completo, user.correo, user.rol, password, id_usuario)
     )
     conn.commit()
     cursor.close()

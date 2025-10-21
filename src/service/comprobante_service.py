@@ -31,11 +31,17 @@ def get_by_id(id_comprobante):
 
 def create_comprobante(id_movimiento, id_proveedor, canal):
     """
-    Registra un comprobante nuevo (llama a un procedimiento almacenado).
+    Crea un nuevo comprobante de recepción directamente en la tabla comprobantes_recepcion.
     """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.callproc("sp_crear_comprobante_recepcion", [id_movimiento, id_proveedor, canal])
+    
+    query = """
+        INSERT INTO comprobantes_recepcion (id_movimiento, id_proveedor, canal)
+        VALUES (%s, %s, %s)
+    """
+    
+    cursor.execute(query, (id_movimiento, id_proveedor, canal))
     conn.commit()
     cursor.close()
     conn.close()

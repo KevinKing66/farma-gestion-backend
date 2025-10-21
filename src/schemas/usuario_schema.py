@@ -20,6 +20,6 @@ class UsuarioUpdate(BaseModel):
     rol: Optional[Literal["AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]]
     contrasena: Optional[str]
 class UsuarioResponse(UsuarioBase):
-    id: int
+    id_usuario: int
     rol: Literal["AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]
     bloqueado_hasta: Optional[datetime]  # ✅ mejor que str para compatibilidad total

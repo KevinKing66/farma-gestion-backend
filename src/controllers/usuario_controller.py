@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from src.service import usuario_service
 from src.schemas.usuario_schema import Login, UsuarioCreate, UsuarioUpdate
 
@@ -11,8 +12,11 @@ def login(user: Login):
     return usuario_service.login(user)
 
 def create(user: UsuarioCreate):
-    usuario_service.create_usuario(user)
-    return {"message": "Usuario creado correctamente"}
+    try:
+        usuario_service.create_usuario(user)
+        return {"message": "Usuario creado correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 def update(id_usuario, data: UsuarioUpdate):
     usuario_service.update_usuario(

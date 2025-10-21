@@ -46,7 +46,7 @@ def update_ubicacion(id_ubicacion, nombre, tipo, activo):
 def delete_ubicacion(id_ubicacion):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM ubicaciones WHERE id_ubicacion=%s", (id_ubicacion,))
+    cursor.execute("call sp_eliminar_ubicaciones(%s)", (id_ubicacion,))
     conn.commit()
     cursor.close()
     conn.close()
