@@ -9,7 +9,10 @@ def get_one(id_usuario: int):
     return usuario_service.get_usuario_by_id(id_usuario)
 
 def login(user: Login):
-    return usuario_service.login(user)
+    try:
+        return usuario_service.login(user)
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 def create(user: UsuarioCreate):
     try:

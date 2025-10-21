@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 class Login(BaseModel):
     correo: EmailStr
-    password: str = Field(..., max_length=150)
+    contrasena: str = Field(..., max_length=150)
 
 class UsuarioBase(BaseModel):
     nombre_completo: str = Field(..., max_length=150)

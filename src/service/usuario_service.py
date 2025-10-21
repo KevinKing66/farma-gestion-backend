@@ -72,7 +72,7 @@ def login(user: Login) -> UsuarioResponse:
     if not user_db:
         raise Exception("Usuario no encontrado")
 
-    if not verify_password(user.password, user_db.contrasena):
+    if not verify_password(user.contrasena, user_db.contrasena):
         raise Exception("Contraseña incorrecta")
 
     return UsuarioResponse(**user_db.__dict__)
