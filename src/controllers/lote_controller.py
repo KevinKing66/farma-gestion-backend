@@ -19,12 +19,9 @@ def create(data):
     )
     return {"message": "Lote creado correctamente"}
 
-def update(id_lote, data):
+def update(id, data):
     lote_service.update_lote(
-        id_lote,
-        data["id_item"],
-        data["id_proveedor"],
-        data["codigo_lote"],
+        id,
         data["fecha_vencimiento"],
         data["costo_unitario"]
     )

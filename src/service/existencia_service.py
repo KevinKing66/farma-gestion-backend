@@ -42,10 +42,7 @@ def get_existencia_by_id(id_existencia):
 def create_existencia(id_lote, id_ubicacion, saldo):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO existencias (id_lote, id_ubicacion, saldo)
-        VALUES (%s, %s, %s)
-    """, (id_lote, id_ubicacion, saldo))
+    cursor.execute("CALL sp_crear_existencia(%s, %s, %s)", (id_lote, id_ubicacion, saldo))
     conn.commit()
     cursor.close()
     conn.close()
@@ -67,7 +64,7 @@ def update_existencia(id_existencia, id_lote, id_ubicacion, saldo):
 def delete_existencia(id_existencia):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM existencias WHERE id_existencia=%s", (id_existencia,))
+    cursor.execute("CALL sp_eliminar_existencia(%s)", (id_existencia,))
     conn.commit()
     cursor.close()
     conn.close()

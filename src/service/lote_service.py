@@ -35,26 +35,21 @@ def get_lote_by_id(id_lote):
     return result
 
 
-def create_lote(id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):
+def create_lote(id, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO lotes (id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario))
+       CALL sp_crear_lote(%s, %s, %s, %s, %s)
+    """, (id, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario))
     conn.commit()
     cursor.close()
     conn.close()
 
 
-def update_lote(id_lote, id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):
+def update_lote(id_item, fecha_vencimiento, costo_unitario):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE lotes
-        SET id_item=%s, id_proveedor=%s, codigo_lote=%s, fecha_vencimiento=%s, costo_unitario=%s
-        WHERE id_lote=%s
-    """, (id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario, id_lote))
+    cursor.execute("CALL sp_actualizar_lote(%s, %s, %s)", (id_item, fecha_vencimiento, costo_unitario))
     conn.commit()
     cursor.close()
     conn.close()
@@ -63,7 +58,7 @@ def update_lote(id_lote, id_item, id_proveedor, codigo_lote, fecha_vencimiento, 
 def delete_lote(id_lote):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM lotes WHERE id_lote=%s", (id_lote,))
+    cursor.execute("CALL sp_eliminar_lote(%s)", (id_lote,))
     conn.commit()
     cursor.close()
     conn.close()

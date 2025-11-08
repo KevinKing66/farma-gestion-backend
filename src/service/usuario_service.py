@@ -22,7 +22,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_all_usuarios():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM usuarios")
+    cursor.execute("CALL sp_listar_usuarios()")
     result = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -32,7 +32,7 @@ def get_all_usuarios():
 def get_usuario_by_id(id_usuario):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+    cursor.execute("CALL sp_obtener_usuario(%s)", (id_usuario,))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -82,12 +82,8 @@ def update_usuario(id_usuario, user: UsuarioUpdate):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        """
-        UPDATE usuarios 
-        SET nombre_completo=%s, correo=%s, rol=%s, contrasena=%s 
-        WHERE id_usuario=%s
-        """,
-        (user.nombre_completo, user.correo, user.rol, password, id_usuario)
+        "CALL sp_actualizar_usuario(%s, %s, %s, %s, %s)",
+        (id_usuario, user.nombre_completo, user.correo, user.rol, password)
     )
     conn.commit()
     cursor.close()
@@ -97,7 +93,7 @@ def update_usuario(id_usuario, user: UsuarioUpdate):
 def delete_usuario(id_usuario):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+    cursor.execute("CALL sp_eliminar_usuario(%s)", (id_usuario,))
     conn.commit()
     cursor.close()
     conn.close()

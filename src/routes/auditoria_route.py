@@ -16,10 +16,3 @@ def get_one(id_evento: int):
 def get_by_tabla(tabla_afectada: str):
     return auditoria_controller.get_by_tabla(tabla_afectada)
 
-@router.post("/")
-def create(data: AuditoriaBase):
-    return auditoria_controller.create(data)
-
-@router.delete("/{id_evento}")
-def delete(id_evento: int):
-    return auditoria_controller.delete(id_evento)

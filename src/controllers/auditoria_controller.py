@@ -22,7 +22,3 @@ def create(data:AuditoriaBase):
         data.hash_evento
     )
     return {"message": "Evento de auditoría registrado correctamente"}
-
-def delete(id_evento):
-    auditoria_service.delete_auditoria(id_evento)
-    return {"message": f"Evento de auditoría con id {id_evento} eliminado correctamente"}

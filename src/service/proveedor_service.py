@@ -3,7 +3,7 @@ from src.config.database import get_connection
 def get_all_proveedores():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM proveedores")
+    cursor.execute("CALL sp_listar_proveedores()")
     result = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -13,7 +13,7 @@ def get_all_proveedores():
 def get_proveedor_by_id(id_proveedor):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM proveedores WHERE id_proveedor = %s", (id_proveedor,))
+    cursor.execute("CALL sp_obtener_proveedor(%s)", (id_proveedor,))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -24,7 +24,7 @@ def create_proveedor(nombre, nit):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO proveedores (nombre, nit) VALUES (%s, %s)",
+        "CALL sp_crear_proveedor(%s, %s)",
         (nombre, nit)
     )
     conn.commit()
@@ -36,8 +36,8 @@ def update_proveedor(id_proveedor, nombre, nit):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE proveedores SET nombre = %s, nit = %s WHERE id_proveedor = %s",
-        (nombre, nit, id_proveedor)
+        "CALL sp_actualizar_proveedor(%s)",
+        (id_proveedor, nombre, nit,)
     )
     conn.commit()
     cursor.close()
