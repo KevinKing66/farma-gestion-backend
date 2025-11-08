@@ -1,6 +1,9 @@
+from typing import Any, List, Optional, cast
+from src.schemas.item_schema import ItemResponse
+from src.models.item_model import Item
 from src.config.database import get_connection
 
-def get_all_items():
+def get_all_items() -> List[ItemResponse]:
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
@@ -8,13 +11,13 @@ def get_all_items():
         FROM items i
         INNER JOIN ubicaciones u ON i.id_ubicacion = u.id_ubicacion
     """)
-    result = cursor.fetchall()
+    rows = cursor.fetchall()
     cursor.close()
     conn.close()
-    return result
+    return [ItemResponse(**row) for row in rows] # type: ignore
 
 
-def get_item_by_id(id_item):
+def get_item_by_id(id_item) -> ItemResponse:
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
@@ -26,7 +29,7 @@ def get_item_by_id(id_item):
     result = cursor.fetchone()
     cursor.close()
     conn.close()
-    return result
+    return ItemResponse(**result) # type: ignore
 
 
 def create_item(id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo):
@@ -63,23 +66,41 @@ def delete_item(id_item):
     conn.close()
 
 
-def update_location(id_item, id_location):
+def update_location(id_item: int, id_location: int):
     current = get_item_by_id(id_item)
 
     if current is None:
         raise Exception("Item no encontrado")
     
+
+    params = (
+        id_item,
+        id_location,
+        current.codigo or None,
+        current.descripcion or None,
+        current.tipo_item or None,
+        current.unidad_medida or None,
+        current.stock_minimo or None,
+    )
+    
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""CALL sp_actualizar_items(%s, %s, %s, %s, %s, %s, %s)""", 
-                   (id_item, 
-                    id_location, 
-                    current.get("codigo", None),
-                    current.get("descripcion", None), 
-                    current.get("tipo_item", None), 
-                    current.get("unidad_medida", None), 
-                    current.get("stock_minimo", None)))
+
+    params: tuple[Any, ...] = (
+        id_item,
+        id_location,
+        current.codigo or None,
+        current.descripcion or None,
+        current.tipo_item or None,
+        current.unidad_medida or None,
+        current.stock_minimo or None,
+    )
+
+    cursor.execute(
+        "CALL sp_actualizar_items(%s, %s, %s, %s, %s, %s, %s)",
+        params
+    )
     result = cursor.fetchall()
     cursor.close()
     conn.close()

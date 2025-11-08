@@ -17,6 +17,7 @@ class ItemUpdate(ItemBase):
 
 class ItemResponse(ItemBase):
     id_item: int
+    nombre_ubicacion: str
 
     class Config:
         orm_mode = True
