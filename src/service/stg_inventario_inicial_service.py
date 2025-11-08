@@ -1,58 +1,92 @@
+from typing import Any, Dict, List, Optional, cast
+from src.schemas.stg_inventario_inicial_schema import (
+    StgInventarioInicialSchema,
+    StgInventarioInicialResponse,
+)
 from src.config.database import get_connection
 
-def get_all_registros():
+def create(data: StgInventarioInicialSchema) -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CALL sp_crear_stg_inventario_inicial(%s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            data.codigo_item,
+            data.nit_proveedor,
+            data.codigo_lote,
+            data.fecha_vencimiento,
+            data.costo_unitario,
+            data.nombre_ubicacion,
+            data.cantidad,
+        ),
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def getByItemAndLote(
+    codigo_item: str, codigo_lote: str
+) -> Optional[StgInventarioInicialResponse]:
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM stg_inventario_inicial")
-    result = cursor.fetchall()
+    cursor.execute(
+        """
+        CALL sp_obtener_stg_inventario_inicial(%s, %s)
+        """,
+        (codigo_item, codigo_lote),
+    )
+    result = cursor.fetchone()
     cursor.close()
     conn.close()
-    return result
+    return (
+        StgInventarioInicialResponse(**cast(Dict[str, Any], result))
+        if result
+        else None
+    )
 
-
-def insert_registro(codigo_item, nit_proveedor, codigo_lote, fecha_vencimiento, costo_unitario, nombre_ubicacion, cantidad):
+def get_all() -> List[StgInventarioInicialResponse]:
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO stg_inventario_inicial
-        (codigo_item, nit_proveedor, codigo_lote, fecha_vencimiento, costo_unitario, nombre_ubicacion, cantidad)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (codigo_item, nit_proveedor, codigo_lote, fecha_vencimiento, costo_unitario, nombre_ubicacion, cantidad))
-    conn.commit()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("CALL sp_listar_stg_inventario_inicial()")
+    results = cursor.fetchall()
     cursor.close()
     conn.close()
-
-
-def bulk_insert(lista_registros):
-    conn = get_connection()
-    cursor = conn.cursor()
-    query = """
-        INSERT INTO stg_inventario_inicial
-        (codigo_item, nit_proveedor, codigo_lote, fecha_vencimiento, costo_unitario, nombre_ubicacion, cantidad)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """
-    data = [
-        (
-            r["codigo_item"],
-            r["nit_proveedor"],
-            r["codigo_lote"],
-            r["fecha_vencimiento"],
-            r["costo_unitario"],
-            r["nombre_ubicacion"],
-            r["cantidad"]
-        )
-        for r in lista_registros
+    return [
+        StgInventarioInicialResponse(**cast(Dict[str, Any], r))
+        for r in results
     ]
-    cursor.executemany(query, data)
+
+def update(data: StgInventarioInicialSchema) -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CALL sp_actualizar_stg_inventario_inicial(%s, %s, %s, %s, %s, %s)
+        """,
+        (
+            data.codigo_item,
+            data.codigo_lote,
+            data.fecha_vencimiento,
+            data.costo_unitario,
+            data.nombre_ubicacion,
+            data.cantidad,
+        ),
+    )
     conn.commit()
     cursor.close()
     conn.close()
 
-
-def delete_all():
+def delete(codigo_item: str, codigo_lote: str) -> None:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM stg_inventario_inicial")
+    cursor.execute(
+        """
+        CALL sp_eliminar_stg_inventario_inicial(%s, %s)
+        """,
+        (codigo_item, codigo_lote),
+    )
     conn.commit()
     cursor.close()
     conn.close()

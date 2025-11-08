@@ -1,11 +1,16 @@
-from pydantic import BaseModel, Field
-from datetime import date
+from typing import Optional
+from pydantic import BaseModel
 
-class StgInventarioInicial(BaseModel):
-    codigo_item: str = Field(..., max_length=50)
-    nit_proveedor: str = Field(..., max_length=50)
-    codigo_lote: str = Field(..., max_length=50)
-    fecha_vencimiento: date
+
+class StgInventarioInicialSchema(BaseModel):
+    codigo_item: str
+    nit_proveedor: str
+    codigo_lote: str
+    fecha_vencimiento: str
     costo_unitario: float
-    nombre_ubicacion: str = Field(..., max_length=100)
-    cantidad: int = Field(..., gt=0)
+    nombre_ubicacion: str
+    cantidad: int
+
+
+class StgInventarioInicialResponse(StgInventarioInicialSchema):
+    id: Optional[int] = None
