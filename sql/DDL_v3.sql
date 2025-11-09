@@ -1595,7 +1595,7 @@ BEGIN
   CALL sp_registrar_ingreso(p_id_item, p_id_proveedor, p_codigo_lote, p_fecha_venc,
     p_costo_unitario, p_id_ubic_dest, p_cantidad, p_id_usuario, p_motivo);
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-01, RF-01
 DELIMITER //
@@ -1619,7 +1619,7 @@ BEGIN
     SET p_id_lote = LAST_INSERT_ID();
   END IF;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-02, RF-02
 -- Añade validación de tipo SERVICIO en sp_registrar_salida
@@ -1653,7 +1653,7 @@ BEGIN
     VALUES (p_id_lote, p_id_usuario, 'SALIDA', p_cantidad, p_id_ubicacion_origen, p_id_ubicacion_destino, p_motivo);
   COMMIT;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-02, RF-02
 DELIMITER //
@@ -1664,7 +1664,7 @@ CREATE PROCEDURE sp_mov_registrar_salida(
 BEGIN
   CALL sp_registrar_salida(p_id_lote, p_id_ubic_origen, p_id_ubic_dest, p_cantidad, p_id_usuario, p_motivo);
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-04, RF-05
 DELIMITER //
@@ -1696,7 +1696,7 @@ BEGIN
     (p_id_lote, p_id_usuario, 'TRANSFERENCIA', p_cantidad, p_id_ubicacion_origen, p_id_ubicacion_destino, COALESCE(p_motivo,'Reabastecimiento'));
   COMMIT;
   END //
-  DELIMITER;
+  DELIMITER ;
   
 -- HU-04, RF-05
 DELIMITER //
@@ -1707,7 +1707,7 @@ CREATE PROCEDURE sp_mov_transferir_stock(
 BEGIN
   CALL sp_transferir_stock(p_id_lote, p_id_ubic_origen, p_id_ubic_dest, p_cantidad, p_id_usuario, p_motivo);
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-08, RF-08
 DELIMITER //
@@ -1854,7 +1854,7 @@ CALL sp_registrar_ingreso(
   CLOSE cur;
     SET @ctx_id_usuario = NULL;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-11
 DELIMITER //
@@ -1873,7 +1873,7 @@ BEGIN
     WHERE s.activo = 1
     ORDER BY s.hora_inicio DESC;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-11
 DELIMITER //
@@ -1883,7 +1883,7 @@ BEGIN
     SET activo = 0, hora_cierre = NOW()
     WHERE id_sesion = p_id_sesion;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-11
 DELIMITER //
@@ -1903,7 +1903,7 @@ BEGIN
     INSERT INTO sesiones_activas(id_usuario, ip, user_agent)
     VALUES (p_id_usuario, p_ip, p_user_agent);
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-12
 DELIMITER //
@@ -1993,7 +1993,7 @@ BEGIN
       AND (p_id_item IS NULL OR i.id_item = p_id_item)
     GROUP BY mv.id_ubicacion_destino, u.nombre;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-17
 
@@ -2052,7 +2052,7 @@ BEGIN
     FROM ips_permitidas
     ORDER BY fecha_registro DESC;
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-17
 
@@ -2099,7 +2099,7 @@ BEGIN
     INSERT INTO movimientos(id_lote, id_usuario, tipo, cantidad, id_ubicacion_destino, motivo)
     VALUES (p_id_lote, p_id_usuario, 'AJUSTE', p_cantidad, p_id_ubicacion, CONCAT('Devolución: ', p_motivo));
 END//
-DELIMITER;
+DELIMITER ;
 
 -- HU-21
 DELIMITER //
@@ -2604,7 +2604,7 @@ BEGIN
   SELECT * FROM prevs
   WHERE esperado <> hash_real;
 END//
-DELIMITER; 
+DELIMITER ; 
 
 -- SP: Actualizar fecha de último login
 DELIMITER //
@@ -2624,7 +2624,7 @@ BEGIN
         estado_confirmacion = 'REVISADA'
     WHERE id_notificacion = p_id_notificacion;
 END;//
-DELIMITER;
+DELIMITER ;
 
 -- SP: Actualizar ubicación física de lote
 DELIMITER //
@@ -3772,7 +3772,7 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'AJUSTE debe afectar solo una ubicación';
   END IF;
 END//
-DELIMITER;
+DELIMITER ;
 
 
 -- VISTAS (HU) (LOGICA DE NEGOCIO)
