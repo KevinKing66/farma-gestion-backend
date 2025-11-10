@@ -11,3 +11,4 @@ aiomysql
 python-dotenv
 pydantic_settings
 bcrypt
+pydantic[email]
