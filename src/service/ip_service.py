@@ -11,7 +11,7 @@ def create_ip(data: IPCreate) -> int | None:
     conn = get_connection()
     try:
         with conn.cursor(dictionary=True) as cursor:
-            cursor.execute("SET @u_admin = %s", (data.id_usuario,))
+            # cursor.execute("SET @u_admin = %s", (data.id_usuario,))
             
             cursor.execute(
                 "CALL sp_crear_ip(%s, %s, @u_admin)",

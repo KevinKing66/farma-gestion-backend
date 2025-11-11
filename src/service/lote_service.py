@@ -1,3 +1,4 @@
+import mysql
 from src.config.database import get_connection
 
 def get_all_lotes():
@@ -35,15 +36,30 @@ def get_lote_by_id(id_lote):
     return result
 
 
-def create_lote(id, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):
+def create_lote(id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-       CALL sp_crear_lote(%s, %s, %s, %s, %s)
-    """, (id, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.callproc(
+            "sp_crear_lote",
+            (id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario)
+        )
+
+        # ✅ Consumir el resultado del SELECT dentro del SP
+        result = None
+        for res in cursor.stored_results():
+            result = res.fetchone()  # obtiene {"id_lote": valor}
+
+        conn.commit()
+        return result  # puedes retornar el id del lote si lo necesitas
+
+    except mysql.connector.Error as err: # type: ignore
+        conn.rollback()
+        raise err
+    finally:
+        cursor.close()
+        conn.close()
+
 
 
 def update_lote(id_item, fecha_vencimiento, costo_unitario):

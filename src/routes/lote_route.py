@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from src.schemas.lote_schema import LoteCreate, LoteUpdate
 from src.controllers import lote_controller
 
 router = APIRouter(prefix="/lotes")
@@ -12,11 +13,11 @@ def get_one(id_lote: int):
     return lote_controller.get_one(id_lote)
 
 @router.post("/")
-def create(data: dict):
+def create(data: LoteCreate):
     return lote_controller.create(data)
 
 @router.put("/{id_lote}")
-def update(id_lote: int, data: dict):
+def update(id_lote: int, data: LoteUpdate):
     return lote_controller.update(id_lote, data)
 
 @router.delete("/{id_lote}")
