@@ -1,3 +1,4 @@
+from src.schemas.item_schema import ItemCreate
 from src.service import item_service
 
 def get_all():
@@ -6,16 +7,15 @@ def get_all():
 def get_one(id_item):
     return item_service.get_item_by_id(id_item)
 
-def create(data):
-    item_service.create_item(
-        data["id_ubicacion"],
-        data.get("codigo", None),
-        data["descripcion"],
-        data["tipo_item"],
-        data.get("unidad_medida", "UND"),
-        data.get("stock_minimo", 0)
+def create(data: ItemCreate):
+    return item_service.create_item(
+        data.id_ubicacion,
+        data.codigo,
+        data.descripcion,
+        data.tipo_item or "MEDICAMENTO",
+        data.unidad_medida or "UND",
+        data.stock_minimo or 0
     )
-    return {"message": "Item creado correctamente"}
 
 def update(id_item, data):
     item_service.update_item(

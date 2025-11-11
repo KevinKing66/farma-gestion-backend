@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from src.schemas.item_schema import ItemCreate
 from src.controllers import item_controller
 
 router = APIRouter(prefix="/items")
@@ -12,7 +13,7 @@ def get_one(id_item: int):
     return item_controller.get_one(id_item)
 
 @router.post("/")
-def create(data: dict):
+def create(data: ItemCreate):
     return item_controller.create(data)
 
 @router.put("/{id_item}")

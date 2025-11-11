@@ -1,4 +1,6 @@
 from typing import Any, Dict, List, Optional, cast
+
+import mysql
 from src.schemas.item_schema import ItemResponse
 from src.models.item_model import Item
 from src.config.database import get_connection
@@ -32,17 +34,29 @@ def get_item_by_id(id_item: int) -> Optional[Item]:
     conn.close()
     return Item(**cast(Dict[str, Any], result)) if result else None
 
-
 def create_item(id_ubicacion: int, codigo: str, descripcion: str, tipo_item: str, unidad_medida: str, stock_minimo: int):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "CALL sp_crear_item(%s, %s, %s, %s, %s, %s)",
-        (id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.callproc(
+            "sp_crear_item",
+            (id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo)
+        )
+
+        result = None
+        for res in cursor.stored_results():
+            result = res.fetchone()  # obtiene {"id_lote": valor}
+
+        conn.commit()
+        return result  # puedes retornar el id del lote si lo necesitas
+
+    except mysql.connector.Error as err: # type: ignore
+        conn.rollback()
+        raise err
+    finally:
+        cursor.close()
+        conn.close()
+
 
 
 def update_item(id_item: int, id_ubicacion: int, codigo: str, descripcion: str, tipo_item: str, unidad_medida: str, stock_minimo: int):
