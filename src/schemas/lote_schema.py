@@ -12,7 +12,9 @@ class LoteCreate(LoteBase):
     pass
 
 class LoteUpdate(LoteBase):
-    pass
+    id_item: int
+    fecha_vencimiento: date
+    costo_unitario: float
 
 class LoteResponse(LoteBase):
     id_lote: int
