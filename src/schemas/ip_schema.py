@@ -5,7 +5,6 @@ from datetime import datetime
 class IPCreate(BaseModel):
     ip: str
     descripcion: str
-    id_usuario: int
 
 
 class IPResponse(BaseModel):
