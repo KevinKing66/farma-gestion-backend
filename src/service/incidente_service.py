@@ -25,7 +25,7 @@ def create_incidente(data: IncidenteCreate) -> int:
                 )
             )
             result = cursor.fetchone()
-            return result["id_incidente"]
+            return result["id_incidente"] # type: ignore
     finally:
         conn.close()
 

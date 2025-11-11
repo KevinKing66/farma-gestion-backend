@@ -7,7 +7,7 @@ class IPNoEncontradaError(Exception):
     pass
 
 
-def create_ip(data: IPCreate) -> int:
+def create_ip(data: IPCreate) -> int | None:
     conn = get_connection()
     try:
         with conn.cursor(dictionary=True) as cursor:
