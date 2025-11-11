@@ -11,9 +11,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-
---   1) Catálogos base
- 
+/* ===========================================================
+   1) Catálogos base
+   =========================================================== */
 CREATE TABLE proveedores (
     id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
     nombre       VARCHAR(150) NOT NULL,
@@ -43,8 +43,10 @@ CREATE TABLE usuarios (
     CONSTRAINT chk_pwd_bcrypt CHECK (contrasena LIKE '$2%')
 ) ENGINE=InnoDB;
 
---   2) Items y Lotes
 
+/* ===========================================================
+   2) Items y Lotes
+   =========================================================== */
 CREATE TABLE items (
   id_item       INT AUTO_INCREMENT PRIMARY KEY,
   id_ubicacion  INT NOT NULL,
@@ -118,8 +120,9 @@ CONSTRAINT chk_lpos_completitud CHECK ((estante IS NULL AND nivel IS NULL AND pa
 	OR (estante IS NOT NULL AND nivel IS NOT NULL AND pasillo IS NOT NULL))
 ) ENGINE=InnoDB;
 
---   3) Operativas y soporte
-
+/* ===========================================================
+   3) Operativas y soporte
+   =========================================================== */
 CREATE TABLE existencias (
   id_existencia BIGINT AUTO_INCREMENT PRIMARY KEY,
   id_lote       INT NOT NULL,
@@ -222,8 +225,9 @@ CREATE TABLE etiquetas_qr (
     FOREIGN KEY (id_lote) REFERENCES lotes(id_lote)
 ) ENGINE=InnoDB;
 
---   5) Movimientos + Comprobantes
-
+/* ===========================================================
+   5) Movimientos + Comprobantes
+   =========================================================== */
 CREATE TABLE movimientos (
   id_movimiento       BIGINT AUTO_INCREMENT PRIMARY KEY,
   id_lote             INT NOT NULL,
@@ -259,7 +263,7 @@ CREATE TABLE comprobantes_recepcion (
 
 CREATE TABLE ips_permitidas (
     id_ip INT AUTO_INCREMENT PRIMARY KEY,
-    ip VARCHAR(45) NOT NULL UNIQUE,
+    ip VARCHAR(45) NOT NULL,
     descripcion VARCHAR(255),
     fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -320,8 +324,9 @@ CREATE TABLE IF NOT EXISTS auditoria_punteros (
 
 
 
--- Procedimientos (CRUDs)
-
+/* ===========================================================
+                    Procedimientos (CRUDs)
+   =========================================================== */
 
 -- Crear proveedor RF-06
 DELIMITER //
@@ -1595,7 +1600,7 @@ BEGIN
   CALL sp_registrar_ingreso(p_id_item, p_id_proveedor, p_codigo_lote, p_fecha_venc,
     p_costo_unitario, p_id_ubic_dest, p_cantidad, p_id_usuario, p_motivo);
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-01, RF-01
 DELIMITER //
@@ -1619,7 +1624,7 @@ BEGIN
     SET p_id_lote = LAST_INSERT_ID();
   END IF;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-02, RF-02
 -- Añade validación de tipo SERVICIO en sp_registrar_salida
@@ -1653,7 +1658,7 @@ BEGIN
     VALUES (p_id_lote, p_id_usuario, 'SALIDA', p_cantidad, p_id_ubicacion_origen, p_id_ubicacion_destino, p_motivo);
   COMMIT;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-02, RF-02
 DELIMITER //
@@ -1664,7 +1669,7 @@ CREATE PROCEDURE sp_mov_registrar_salida(
 BEGIN
   CALL sp_registrar_salida(p_id_lote, p_id_ubic_origen, p_id_ubic_dest, p_cantidad, p_id_usuario, p_motivo);
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-04, RF-05
 DELIMITER //
@@ -1696,7 +1701,7 @@ BEGIN
     (p_id_lote, p_id_usuario, 'TRANSFERENCIA', p_cantidad, p_id_ubicacion_origen, p_id_ubicacion_destino, COALESCE(p_motivo,'Reabastecimiento'));
   COMMIT;
   END //
-  DELIMITER ;
+  DELIMITER;
   
 -- HU-04, RF-05
 DELIMITER //
@@ -1707,7 +1712,7 @@ CREATE PROCEDURE sp_mov_transferir_stock(
 BEGIN
   CALL sp_transferir_stock(p_id_lote, p_id_ubic_origen, p_id_ubic_dest, p_cantidad, p_id_usuario, p_motivo);
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-08, RF-08
 DELIMITER //
@@ -1854,7 +1859,7 @@ CALL sp_registrar_ingreso(
   CLOSE cur;
     SET @ctx_id_usuario = NULL;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-11
 DELIMITER //
@@ -1873,7 +1878,7 @@ BEGIN
     WHERE s.activo = 1
     ORDER BY s.hora_inicio DESC;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-11
 DELIMITER //
@@ -1883,7 +1888,7 @@ BEGIN
     SET activo = 0, hora_cierre = NOW()
     WHERE id_sesion = p_id_sesion;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-11
 DELIMITER //
@@ -1903,7 +1908,7 @@ BEGIN
     INSERT INTO sesiones_activas(id_usuario, ip, user_agent)
     VALUES (p_id_usuario, p_ip, p_user_agent);
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-12
 DELIMITER //
@@ -1993,7 +1998,7 @@ BEGIN
       AND (p_id_item IS NULL OR i.id_item = p_id_item)
     GROUP BY mv.id_ubicacion_destino, u.nombre;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-17
 
@@ -2052,7 +2057,7 @@ BEGIN
     FROM ips_permitidas
     ORDER BY fecha_registro DESC;
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-17
 
@@ -2099,7 +2104,7 @@ BEGIN
     INSERT INTO movimientos(id_lote, id_usuario, tipo, cantidad, id_ubicacion_destino, motivo)
     VALUES (p_id_lote, p_id_usuario, 'AJUSTE', p_cantidad, p_id_ubicacion, CONCAT('Devolución: ', p_motivo));
 END//
-DELIMITER ;
+DELIMITER;
 
 -- HU-21
 DELIMITER //
@@ -2545,7 +2550,6 @@ END IF;
   END CASE;
   COMMIT;
 END//
-DELIMITER ;
 
 -- Recalcular existencias SIN TRUNCATE (sin commits implícitos)
 DELIMITER //
@@ -2584,10 +2588,8 @@ BEGIN
   /* cerrar bypass */
   SET @bypass_existencias = NULL;
 END//
-DELIMITER ;
 
 -- Verificación de cadena de auditoría
-DELIMITER //
 CREATE PROCEDURE sp_verificar_auditoria_integridad()
 BEGIN
   WITH ordered AS (
@@ -2604,18 +2606,14 @@ BEGIN
   SELECT * FROM prevs
   WHERE esperado <> hash_real;
 END//
-DELIMITER ; 
 
 -- SP: Actualizar fecha de último login
-DELIMITER //
 CREATE PROCEDURE sp_actualizar_ultimo_login(IN p_id_usuario INT)
 BEGIN
     UPDATE usuarios SET fecha_ultimo_login = NOW() WHERE id_usuario = p_id_usuario;
 END;//
-DELIMITER ;
 
 -- SP: Confirmar recepción de alerta
-DELIMITER //
 CREATE PROCEDURE sp_confirmar_alerta(IN p_id_notificacion BIGINT, IN p_id_usuario INT)
 BEGIN
     UPDATE notificaciones
@@ -2624,7 +2622,6 @@ BEGIN
         estado_confirmacion = 'REVISADA'
     WHERE id_notificacion = p_id_notificacion;
 END;//
-DELIMITER ;
 
 -- SP: Actualizar ubicación física de lote
 DELIMITER //
@@ -2855,7 +2852,8 @@ BEGIN
          NULL, 'PENDIENTE', NOW()
   FROM v_alertas_vencimiento;
 END//
-DELIMITER ;
+
+
 
 -- SP central para registrar eventos encadenados por tabla_afectada
 DELIMITER //
@@ -2944,10 +2942,12 @@ END//
 DELIMITER ;
 
 
--- TRIGGERS (HU) (LOGICA DE NEGOCIO)
-
+/* ===========================================================
+		     TRIGGERS (HU) (LOGICA DE NEGOCIO)
+   =========================================================== */
+   
 -- HU-01, HU-10	
-DELIMITER //  
+ DELIMITER //  
 CREATE TRIGGER trg_comprobante_ingreso_ai
 AFTER INSERT ON movimientos FOR EACH ROW
 BEGIN
@@ -3691,6 +3691,8 @@ END//
 DELIMITER ;
 
 DELIMITER //
+
+DELIMITER //
 CREATE TRIGGER trg_backups_ai_aud
 AFTER INSERT ON backups
 FOR EACH ROW
@@ -3772,10 +3774,11 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'AJUSTE debe afectar solo una ubicación';
   END IF;
 END//
-DELIMITER ;
 
+/* ===========================================================
+		     VISTAS (HU) (LOGICA DE NEGOCIO)
+   =========================================================== */
 
--- VISTAS (HU) (LOGICA DE NEGOCIO)
 -- HU-03, RF-04, HU-18
 CREATE OR REPLACE VIEW v_alertas_stock_bajo AS
 SELECT
@@ -3793,10 +3796,9 @@ HAVING COALESCE(SUM(e.saldo),0) <=
        CASE WHEN it.stock_minimo > 0
             THEN it.stock_minimo
             ELSE CAST((SELECT valor FROM parametros_sistema WHERE clave='umbral_stock_bajo_default' LIMIT 1) AS SIGNED)
-       END;
-       
-
-
+            END;
+            
+            
 CREATE OR REPLACE VIEW v_alertas_stock_critico AS
 SELECT i.id_item, i.codigo AS codigo_item, i.descripcion,
        COALESCE(SUM(e.saldo),0) AS stock_total
@@ -4134,3 +4136,6 @@ LEFT JOIN lotes l ON l.id_item=i.id_item
 LEFT JOIN existencias e ON e.id_lote=l.id_lote
 GROUP BY i.id_item,i.codigo,i.descripcion
 HAVING SUM(COALESCE(e.saldo,0)) < 0;
+
+
+            
