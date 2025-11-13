@@ -16,10 +16,13 @@ SET FOREIGN_KEY_CHECKS = 1;
    =========================================================== */
 CREATE TABLE proveedores (
     id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
-    nombre       VARCHAR(150) NOT NULL,
-    nit          VARCHAR(50)  NOT NULL UNIQUE,
+    nombre VARCHAR(150) NOT NULL,
+    nit VARCHAR(50) NOT NULL UNIQUE,
+    telefono VARCHAR(15) NOT NULL,
+    direccion VARCHAR(255) NOT NULL,
+    correo VARCHAR(100) NOT NULL,
     fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    activo       TINYINT(1) NOT NULL DEFAULT 1
+    activo TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
 
 CREATE TABLE ubicaciones (
@@ -55,6 +58,7 @@ CREATE TABLE items (
   tipo_item     ENUM('MEDICAMENTO','DISPOSITIVO') NOT NULL,
   unidad_medida VARCHAR(20) NOT NULL DEFAULT 'UND',
   stock_minimo  INT NOT NULL DEFAULT 0,
+  uso_frecuente TINYINT(1) DEFAULT 0,
   CONSTRAINT fk_items_ubi FOREIGN KEY (id_ubicacion) REFERENCES ubicaciones(id_ubicacion),
   UNIQUE KEY ux_items_codigo (codigo)
 ) ENGINE=InnoDB;
@@ -81,6 +85,7 @@ CREATE TABLE lotes (
     codigo_lote       VARCHAR(50) NOT NULL,
     fecha_vencimiento DATE NOT NULL,
     costo_unitario    DECIMAL(10,2) NOT NULL,
+    estado ENUM('ACTIVO', 'INACTIVO') DEFAULT 'ACTIVO',
     CONSTRAINT fk_lotes_item      FOREIGN KEY (id_item)      REFERENCES items(id_item),
     CONSTRAINT fk_lotes_proveedor FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor),
     UNIQUE KEY ux_lote_item (id_item, codigo_lote),
@@ -323,6 +328,35 @@ CREATE TABLE IF NOT EXISTS auditoria_punteros (
 ) ENGINE=InnoDB;
 
 
+
+CREATE TABLE IF NOT EXISTS pacientes (
+id_paciente INT PRIMARY KEY AUTO_INCREMENT,
+tipo_documento ENUM ('CEDULA', 'TARJETA DE IDENTIDAD', 'TARJETA DE EXTRANJERÍA') NOT NULL,
+documento VARCHAR (25) NOT NULL,
+fecha_ingreso DATE NULL,
+ultima_atencion DATE NULL,
+nombre_completo VARCHAR (50)
+)ENGINE = InnoDB;
+
+CREATE TABLE ordenes (
+    id_orden INT AUTO_INCREMENT PRIMARY KEY,
+    id_paciente INT NOT NULL,
+    id_usuario INT NOT NULL, -- quien genera la orden
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO') DEFAULT 'PENDIENTE',
+    observaciones VARCHAR(255),
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+);
+
+CREATE TABLE orden_detalle (
+    id_detalle INT AUTO_INCREMENT PRIMARY KEY,
+    id_orden INT NOT NULL,
+    id_item INT NOT NULL,
+    cantidad DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (id_orden) REFERENCES ordenes(id_orden),
+    FOREIGN KEY (id_item) REFERENCES items(id_item)
+);
 
 /* ===========================================================
                     Procedimientos (CRUDs)
@@ -4138,8 +4172,7 @@ GROUP BY i.id_item,i.codigo,i.descripcion
 HAVING SUM(COALESCE(e.saldo,0)) < 0;
 
 
-            
----------- EL PARCERO MASOQUISTA CREO NUEVOS PROCEDIMIENTOS
+-- procedimientos para el front
 
 DELIMITER //
 CREATE PROCEDURE sp_listar_inventario()
@@ -4702,4 +4735,4 @@ CREATE PROCEDURE sp_dashboard_sesiones_activas()
 BEGIN
     SELECT COUNT(*) AS sesiones_activas FROM sesiones_activas WHERE activo = 1;
 END//
-DELIMITER ;
+DELIMITER //
