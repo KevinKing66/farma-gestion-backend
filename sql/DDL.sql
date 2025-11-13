@@ -4735,4 +4735,4 @@ CREATE PROCEDURE sp_dashboard_sesiones_activas()
 BEGIN
     SELECT COUNT(*) AS sesiones_activas FROM sesiones_activas WHERE activo = 1;
 END//
-DELIMITER //
+DELIMITER ;
