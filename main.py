@@ -1,9 +1,33 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from src.config.base import Base
-from src.routes import lote_route, item_route, auditoria_route, comprobante_route, existencia_route, proveedor_route, usuario_route, ubicacion_route, movimiento_route, notificacion_route, parametro_route, staging_inventario_inicial_route, backup_route, control_calidad_route, incidente_route, ip_route, token_route, dashboard_router
+from src.routes import (
+    lote_route, item_route, auditoria_route, comprobante_route, existencia_route,
+    proveedor_route, usuario_route, ubicacion_route, movimiento_route,
+    notificacion_route, parametro_route, staging_inventario_inicial_route,
+    backup_route, control_calidad_route, incidente_route, ip_route, token_route,
+    dashboard_router
+)
 
 app = FastAPI(title="Farma Gestión Backend")
 
+# ----------------------------------------------------------
+# 🔥 HABILITAR CORS AQUÍ (RECIÉN DESPUÉS DE CREAR LA APP)
+# ----------------------------------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ----------------------------------------------------------
+
+# Tus routers
 app.include_router(auditoria_route.router)
 app.include_router(comprobante_route.router)
 app.include_router(existencia_route.router)
@@ -20,7 +44,5 @@ app.include_router(backup_route.router)
 app.include_router(control_calidad_route.router)
 app.include_router(incidente_route.router)
 app.include_router(ip_route.router)
-# app.include_router(lote_posicion_route.router)
 app.include_router(token_route.router)
-# app.include_router(venta_route.router)
 app.include_router(dashboard_router.router)
