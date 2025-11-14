@@ -9,6 +9,7 @@ from src.routes import (
     backup_route, control_calidad_route, incidente_route, ip_route, token_route,
     dashboard_router
 )
+# from src.routes import lote_route, item_route, auditoria_route, comprobante_route, existencia_route, proveedor_route, usuario_route, ubicacion_route, movimiento_route, notificacion_route, parametro_route, staging_inventario_inicial_route, backup_route, control_calidad_route, incidente_route, ip_route, token_route, dashboard_router, inventario_route 
 
 app = FastAPI(title="Farma Gestión Backend")
 
@@ -46,3 +47,5 @@ app.include_router(incidente_route.router)
 app.include_router(ip_route.router)
 app.include_router(token_route.router)
 app.include_router(dashboard_router.router)
+
+app.include_router(inventario_route.router)

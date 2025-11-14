@@ -19,21 +19,22 @@ def get_all_lotes():
 
 
 def get_lote_by_id(id_lote):
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT l.*, 
-               i.descripcion AS item_descripcion,
-               p.nombre AS proveedor_nombre
-        FROM lotes l
-        INNER JOIN items i ON l.id_item = i.id_item
-        INNER JOIN proveedores p ON l.id_proveedor = p.id_proveedor
-        WHERE l.id_lote = %s
-    """, (id_lote,))
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return result
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.callproc('sp_obtener_detalle_lote', [id_lote])
+
+        data = []
+        for result in cursor.stored_results():
+            data = result.fetchall()
+
+        cursor.close()
+        connection.close()
+        return data
+
+    except Exception as e:
+        print(f"Error en obtener_detalle_lote: {e}")
+        raise Exception("Error al obtener detalle del lote")
 
 
 def create_lote(id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):

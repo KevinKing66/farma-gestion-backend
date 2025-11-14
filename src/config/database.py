@@ -18,6 +18,8 @@ def get_connection():
         user=settings.DATABASE_USER,
         password=settings.DATABASE_PASSWORD,
         database=settings.DATABASE_NAME,
+        charset='utf8mb4',
+        collation='utf8mb4_unicode_ci'
     )
     return connection
 

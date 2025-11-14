@@ -4213,6 +4213,23 @@ BEGIN
     ORDER BY i.descripcion ASC;
 END//
 DELIMITER ;
+DELIMITER //
+CREATE PROCEDURE sp_exportar_inventario()
+BEGIN
+    SELECT i.descripcion AS nombre,
+           l.codigo_lote AS lote,
+           i.tipo_item AS categoria,
+           COALESCE(SUM(e.saldo),0) AS stock,
+           l.fecha_vencimiento,
+           u.nombre AS ubicacion
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre;
+END//
+DELIMITER ;
+
 
 DELIMITER //
 CREATE PROCEDURE sp_obtener_detalle_lote(IN p_id_lote INT)
@@ -4237,35 +4254,7 @@ BEGIN
 END//
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE sp_exportar_inventario()
-BEGIN
-    SELECT i.descripcion AS nombre,
-           l.codigo_lote AS lote,
-           i.tipo_item AS categoria,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           l.fecha_vencimiento,
-           u.nombre AS ubicacion
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre;
-END//
-DELIMITER ;
 
-
-
-DELIMITER //
-CREATE PROCEDURE sp_reportes_medicamentos_entregados_mes()
-BEGIN
-    SELECT COALESCE(SUM(mv.cantidad),0) AS total_entregados
-    FROM movimientos mv
-    WHERE mv.tipo = 'SALIDA'
-      AND MONTH(mv.fecha) = MONTH(CURDATE())
-      AND YEAR(mv.fecha) = YEAR(CURDATE());
-END//
-DELIMITER ;
 
 DELIMITER //
 CREATE PROCEDURE sp_reportes_alertas_resueltas()
@@ -4433,6 +4422,18 @@ BEGIN
     LEFT JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
     GROUP BY i.descripcion, u.nombre, i.uso_frecuente
     ORDER BY i.descripcion ASC;
+END//
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE sp_reportes_medicamentos_entregados_mes()
+BEGIN
+    SELECT COALESCE(SUM(mv.cantidad),0) AS total_entregados
+    FROM movimientos mv
+    WHERE mv.tipo = 'SALIDA'
+      AND MONTH(mv.fecha) = MONTH(CURDATE())
+      AND YEAR(mv.fecha) = YEAR(CURDATE());
 END//
 DELIMITER ;
 
