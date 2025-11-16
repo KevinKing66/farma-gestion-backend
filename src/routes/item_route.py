@@ -8,11 +8,11 @@ router = APIRouter(prefix="/items")
 def get_all():
     return item_controller.get_all()
 
-@router.get("/medicanteos")
-def find_all_inventario_by_keyword_and_pagination(filter: str, page, elementsPerPages: int = 5):
-    return item_controller.find_all_medicamento_by_keyword_and_pagination()
+@router.get("/medicamentos")
+def find_all_inventario_by_keyword_and_pagination(keyboard: str | None = "", page: int = 0, elementsPerPages: int = 5):
+    return item_controller.find_all_medicamento_by_keyword_and_pagination(filter=keyboard, pages=page, elementPerPages=elementsPerPages)
 
-@router.get("/{id_item}")
+@router.get("/id/{id_item}")
 def get_one(id_item: int):
     return item_controller.get_one(id_item)
 

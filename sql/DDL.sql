@@ -4477,7 +4477,13 @@ BEGIN
           LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%')))
         AND
           i.tipo_item = 'MEDICAMENTO'
-    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
+    GROUP BY 
+        i.descripcion, 
+        u.nombre,
+        l.codigo_lote, 
+        i.tipo_item, 
+        l.fecha_vencimiento,
+        i.uso_frecuente
     ORDER BY i.descripcion ASC
     LIMIT p_limit OFFSET v_offset;
 END//
