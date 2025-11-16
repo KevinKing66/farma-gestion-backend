@@ -4221,6 +4221,8 @@ BEGIN
     ORDER BY i.descripcion ASC
     LIMIT p_limit OFFSET v_offset;
 END//
+DELIMITER ;
+
 
 DELIMITER //
 CREATE PROCEDURE sp_exportar_inventario()
