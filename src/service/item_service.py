@@ -104,3 +104,20 @@ def update_location(id_item: int, id_location: int) -> Optional[ItemResponse]:
     conn.close()
 
     return ItemResponse(**cast(Dict[str, Any], result)) if result else None
+
+
+
+def find_all_medicamento_by_keyword_and_pagination(filter: str, pages: int = 0, elementPerPages: int = 10):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.callproc('sp_buscar_medicamento', [filter, pages, elementPerPages])
+        data = []
+        for result in cursor.stored_results():
+            data = result.fetchall()
+        cursor.close()
+        connection.close()
+        return data
+    except Exception as e:
+        print(f"Error en sp_buscar_medicamento: {e}")
+        raise Exception("Error al buscar inventario")

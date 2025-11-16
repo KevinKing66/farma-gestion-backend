@@ -39,3 +39,10 @@ def update_location(id_item, data):
 def delete(id_item):
     item_service.delete_item(id_item)
     return {"message": "Item eliminado correctamente"}
+
+
+def find_all_medicamento_by_keyword_and_pagination(filter: str, pages: int = 0, elementPerPages: int = 10):
+    try:
+        return item_service.find_all_medicamento_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
+    except Exception as e:
+        return {"error": str(e)}
