@@ -4194,25 +4194,35 @@ END//
 DELIMITER ;
 
 DELIMITER //
-CREATE PROCEDURE sp_buscar_inventario(IN p_filtro VARCHAR(100))
+CREATE PROCEDURE sp_buscar_inventario(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
 BEGIN
-    SELECT i.descripcion AS nombre,
-           l.codigo_lote AS lote,
-           i.tipo_item AS categoria,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
-           u.nombre AS ubicacion,
-           CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        i.descripcion AS nombre,
+        l.codigo_lote AS lote,
+        i.tipo_item AS categoria,
+        COALESCE(SUM(e.saldo),0) AS stock,
+        DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
+        u.nombre AS ubicacion,
+        CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
     FROM lotes l
     JOIN items i ON i.id_item = l.id_item
     LEFT JOIN existencias e ON e.id_lote = l.id_lote
     LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    WHERE i.descripcion LIKE CONCAT('%', p_filtro, '%')
-       OR l.codigo_lote LIKE CONCAT('%', p_filtro, '%')
+    WHERE LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
     GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
-    ORDER BY i.descripcion ASC;
+    ORDER BY i.descripcion ASC
+    LIMIT p_limit OFFSET v_offset;
 END//
 DELIMITER ;
+
 DELIMITER //
 CREATE PROCEDURE sp_exportar_inventario()
 BEGIN
