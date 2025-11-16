@@ -4221,7 +4221,6 @@ BEGIN
     ORDER BY i.descripcion ASC
     LIMIT p_limit OFFSET v_offset;
 END//
-DELIMITER ;
 
 DELIMITER //
 CREATE PROCEDURE sp_exportar_inventario()
@@ -4448,20 +4447,37 @@ END//
 DELIMITER ;
 
 DELIMITER //
-CREATE PROCEDURE sp_buscar_medicamento(IN p_filtro VARCHAR(100))
+CREATE PROCEDURE sp_buscar_medicamento(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
 BEGIN
-    SELECT i.descripcion AS medicamento,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           DATE_FORMAT(MIN(l.fecha_vencimiento), '%d/%m/%Y') AS vencimiento,
-           u.nombre AS area,
-           CASE WHEN i.uso_frecuente = 1 THEN 'Frecuente' ELSE 'No frecuente' END AS uso_frecuente
-    FROM items i
-    LEFT JOIN lotes l ON l.id_item = i.id_item
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        i.descripcion AS nombre,
+        u.nombre AS area,
+        l.codigo_lote AS lote,
+        i.tipo_item AS categoria,
+        COALESCE(SUM(e.saldo),0) AS stock,
+        DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
+        CASE WHEN i.uso_frecuente = 1 THEN 'Frecuente' ELSE 'No frecuente' END AS uso_frecuente,
+        CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
     LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
-    WHERE i.descripcion LIKE CONCAT('%', p_filtro, '%')
-    GROUP BY i.descripcion, u.nombre, i.uso_frecuente
-    ORDER BY i.descripcion ASC;
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    WHERE 
+          (LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        OR
+          LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%')))
+        AND
+          i.tipo_item = 'MEDICAMENTO'
+    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
+    ORDER BY i.descripcion ASC
+    LIMIT p_limit OFFSET v_offset;
 END//
 DELIMITER ;
 
