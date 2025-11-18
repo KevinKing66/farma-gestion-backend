@@ -4,12 +4,12 @@ from src.controllers import proveedor_controller
 router = APIRouter(prefix="/proveedores")
 
 @router.get("/")
-def get_all():
-    return proveedor_controller.get_all()
+def find_all():
+    return proveedor_controller.find_all()
 
-@router.get("/{id_proveedor}")
-def get_one(id_proveedor: int):
-    return proveedor_controller.get_one(id_proveedor)
+@router.get("/id/{id_proveedor}")
+def find_one(id: int):
+    return proveedor_controller.find_one(id)
 
 @router.post("/")
 def create(data: dict):

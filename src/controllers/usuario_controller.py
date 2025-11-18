@@ -2,10 +2,19 @@ from fastapi import HTTPException
 from src.service import usuario_service
 from src.schemas.usuario_schema import Login, UsuarioCreate, UsuarioUpdate
 
-def get_all():
-    return usuario_service.get_all_usuarios()
+def find_all():
+    return usuario_service.find_all()
 
-def get_one(id_usuario: int):
+
+def find_all_by_keyword_and_pagination(filter: str = 0, pages: int = 0, elementPerPages: int = 10):
+    
+    try:
+        return usuario_service.find_all_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def find_one(id_usuario: int):
     return usuario_service.get_usuario_by_id(id_usuario)
 
 def login(user: Login):

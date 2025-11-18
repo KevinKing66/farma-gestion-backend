@@ -5,8 +5,13 @@ from src.controllers import item_controller
 router = APIRouter(prefix="/items")
 
 @router.get("/")
-def get_all():
+def find_all_with_pagination():
     return item_controller.get_all()
+
+@router.get("/filtro")
+def find_all_with_pagination(keyboard: str | None = "", page: int = 0, elementsPerPages: int = 5):
+    return item_controller.find_all_by_keyword_and_pagination(filter=keyboard, pages=page, elementPerPages=elementsPerPages)
+
 
 @router.get("/medicamentos")
 def find_all_inventario_by_keyword_and_pagination(keyboard: str | None = "", page: int = 0, elementsPerPages: int = 5):

@@ -1,0 +1,40 @@
+from fastapi import APIRouter
+from src.controllers import paciente_controller
+from src.schemas.paciente_model import PatientCreate
+
+router = APIRouter(prefix="/pacientes")
+
+
+@router.get("/")
+def get_all_route():
+    return paciente_controller.find_all()
+
+
+@router.get("/filtro")
+def find_all_with_pagination_route(
+    filter_value: str = "",
+    page: int = 1,
+    limit: int = 10
+):
+    return paciente_controller.find_all_with_pagination(filter_value, page, limit)
+
+
+@router.post("/")
+def create_route(patient: PatientCreate):
+    
+    return paciente_controller.create(patient)
+
+
+@router.put("/{id_paciente}")
+def update(id_paciente: int):
+    return paciente_controller.update(id_paciente)
+
+
+@router.delete("/{id_paciente}")
+def delete_route(id_paciente: int):
+    return paciente_controller.delete(id_paciente)
+
+
+@router.get("/{id_paciente}")
+def get_one_route(id_paciente: int):
+    return paciente_controller.find_by_id(id_paciente)

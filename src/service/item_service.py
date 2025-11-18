@@ -120,4 +120,5 @@ def find_all_medicamento_by_keyword_and_pagination(filter: str, pages: int = 0, 
         return data
     except Exception as e:
         print(f"Error en sp_buscar_medicamento: {e}")
-        raise Exception("Error al buscar inventario")
+        raise Exception("Error al buscar medicamentos en inventario")
+

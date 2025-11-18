@@ -1,6 +1,6 @@
 from src.config.database import get_connection
 
-def get_all_proveedores():
+def find_all_proveedores():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("CALL sp_listar_proveedores()")
@@ -10,7 +10,23 @@ def get_all_proveedores():
     return result
 
 
-def get_proveedor_by_id(id_proveedor):
+def find_all_by_keyword_and_pagination(filter: str, pages: int = 0, elementPerPages: int = 10):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.callproc('sp_buscar_proveedores', [filter, pages, elementPerPages])
+        data = []
+        for result in cursor.stored_results():
+            data = result.fetchall()
+        cursor.close()
+        connection.close()
+        return data
+    except Exception as e:
+        print(f"Error en sp_buscar_proveedores: {e}")
+        raise Exception("Error al buscar proveedores")
+
+
+def find_by_id(id_proveedor):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("CALL sp_obtener_proveedor(%s)", (id_proveedor,))

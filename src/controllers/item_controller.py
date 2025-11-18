@@ -47,3 +47,12 @@ def find_all_medicamento_by_keyword_and_pagination(filter: str = 0, pages: int =
         return item_service.find_all_medicamento_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
     except Exception as e:
         return {"error": str(e)}
+
+
+def find_all_by_keyword_and_pagination(filter: str = 0, pages: int = 0, elementPerPages: int = 10):
+    
+    
+    try:
+        return item_service.find_all_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
+    except Exception as e:
+        return {"error": str(e)}

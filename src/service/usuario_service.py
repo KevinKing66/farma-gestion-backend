@@ -19,7 +19,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except ValueError:
         return False
     
-def get_all_usuarios():
+def find_all():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("CALL sp_listar_usuarios()")
@@ -28,6 +28,20 @@ def get_all_usuarios():
     conn.close()
     return [UsuarioResponse(**user) for user in result] # type: ignore
 
+def find_all_by_keyword_and_pagination(filter: str, pages: int = 0, elementPerPages: int = 10):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.callproc('sp_listar_con_paginacion_usuarios', [filter, pages, elementPerPages])
+        data = []
+        for result in cursor.stored_results():
+            data = result.fetchall()
+        cursor.close()
+        connection.close()
+        return [UsuarioResponse(**user) for user in data]
+    except Exception as e:
+        print(f"Error en sp_buscar_medicamento: {e}")
+        raise Exception("Error al buscar medicamentos en inventario")
 
 def get_usuario_by_id(id_usuario):
     conn = get_connection()

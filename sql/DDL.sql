@@ -396,6 +396,32 @@ BEGIN
 END//
 DELIMITER ;
 
+DELIMITER //
+CREATE PROCEDURE sp_buscar_proveedores(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        pr.id_proveedor,
+        pr.nombre,
+        pr.telefono,
+        pr.correo,
+        pr.direccion
+    FROM proveedores pr
+    WHERE LOWER(pr.nombre) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(pr.correo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(pr.direccion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    ORDER BY pr.nombre ASC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
+
 -- Actualizar proveedor
 DELIMITER //
 CREATE PROCEDURE sp_actualizar_proveedor(
@@ -544,6 +570,37 @@ BEGIN
     ORDER BY nombre_completo;
 END//
 DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_listar_con_paginacion_usuarios(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        u.id_usuario,
+        u.nombre_completo,
+        u.correo,
+        u.rol,
+        u.intentos_fallidos,
+        u.bloqueado_hasta,
+        u.fecha_ultimo_login
+    FROM usuarios u
+    WHERE 
+        (
+            LOWER(u.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+            OR LOWER(u.correo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+            OR LOWER(u.rol) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        )
+    ORDER BY u.nombre_completo ASC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
 
 -- Actualizar usuario
 DELIMITER //
@@ -4361,18 +4418,29 @@ END//
 DELIMITER ;
 
 DELIMITER //
-CREATE PROCEDURE sp_buscar_ordenes(IN p_filtro VARCHAR(100))
+CREATE PROCEDURE sp_buscar_ordenes(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
 BEGIN
-    SELECT o.id_orden AS ID,
-           p.nombre_completo AS paciente,
-           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
-           o.estado
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        o.id_orden AS ID,
+        p.nombre_completo AS paciente,
+        DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
+        o.estado
     FROM ordenes o
     JOIN pacientes p ON p.id_paciente = o.id_paciente
-    WHERE p.nombre_completo LIKE CONCAT('%', p_filtro, '%')
-    ORDER BY o.fecha_creacion DESC;
+    WHERE LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) -- opcional si quieres buscar por ID
+    ORDER BY o.fecha_creacion DESC
+    LIMIT p_limit OFFSET v_offset;
 END//
 DELIMITER ;
+
 
 DELIMITER //
 CREATE PROCEDURE sp_crear_orden(
@@ -4587,15 +4655,26 @@ END//
 DELIMITER ;
 
 DELIMITER //
-CREATE PROCEDURE sp_buscar_paciente(IN p_filtro VARCHAR(100))
+CREATE PROCEDURE sp_buscar_paciente(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
 BEGIN
-    SELECT id_paciente, nombre_completo AS nombre, documento AS identificacion,
-           DATE_FORMAT(fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
-           DATE_FORMAT(ultima_atencion, '%d/%m/%Y') AS ultima_atencion
-    FROM pacientes
-    WHERE nombre_completo LIKE CONCAT('%', p_filtro, '%')
-       OR documento LIKE CONCAT('%', p_filtro, '%')
-    ORDER BY nombre_completo ASC;
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        p.id_paciente,
+        p.nombre_completo AS nombre,
+        p.documento AS identificacion,
+        DATE_FORMAT(p.fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
+        DATE_FORMAT(p.ultima_atencion, '%d/%m/%Y') AS ultima_atencion
+    FROM pacientes p
+    WHERE LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    ORDER BY p.nombre_completo ASC
+    LIMIT p_limit OFFSET v_offset;
 END//
 DELIMITER ;
 

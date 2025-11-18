@@ -1,17 +1,19 @@
 from src.service import proveedor_service
 
-def get_all():
-    return proveedor_service.get_all_proveedores()
+def find_all():
+    return proveedor_service.find_all_proveedores()
 
-def get_one(id_proveedor):
-    return proveedor_service.get_proveedor_by_id(id_proveedor)
+def find_all_with_pagination(filter: str = 0, pages: int = 0, elementPerPages: int = 10):
+    return proveedor_service.find_all_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
+
+def find_one(id):
+    return proveedor_service.find_by_id(id)
 
 def create(data):
-    proveedor_service.create_proveedor(
+    return proveedor_service.create_proveedor(
         data["nombre"],
         data["nit"]
     )
-    return {"message": "Proveedor creado correctamente"}
 
 def update(id_proveedor, data):
     proveedor_service.update_proveedor(

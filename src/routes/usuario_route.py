@@ -5,12 +5,18 @@ from src.controllers import usuario_controller
 router = APIRouter(prefix="/usuarios")
 
 @router.get("/")
-def get_all():
-    return usuario_controller.get_all()
+def find_all():
+    return usuario_controller.find_all()
 
-@router.get("/{id_usuario}")
-def get_one(id_usuario: int):
-    return usuario_controller.get_one(id_usuario)
+@router.get("/filtro")
+def find_all_with_pagination(keyboard: str | None = "", page: int = 0, elementsPerPages: int = 5):
+    return usuario_controller.find_all_by_keyword_and_pagination(filter=keyboard, pages=page, elementPerPages=elementsPerPages)
+
+
+
+@router.get("/id/{id_usuario}")
+def find_one(id_usuario: int):
+    return usuario_controller.find_one(id_usuario)
 
 @router.post("/auth")
 def login(usr: Login):
