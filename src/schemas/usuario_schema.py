@@ -17,10 +17,10 @@ class UsuarioCreate(UsuarioBase):
 class UsuarioUpdate(BaseModel):
     nombre_completo: Optional[str]
     correo: Optional[EmailStr]
-    rol: Optional[Literal["AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]]
+    rol: Optional[Literal["PROVEEDOR", "AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]]
     contrasena: Optional[str]
 class UsuarioResponse(UsuarioBase):
     id_usuario: int
-    rol: Literal["AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]
+    rol: Literal["PROVEEDOR", "AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]
     token: Optional[str] = None
     bloqueado_hasta: Optional[datetime] = None  # ✅ mejor que str para compatibilidad total
