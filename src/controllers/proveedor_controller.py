@@ -3,7 +3,7 @@ from src.service import proveedor_service
 def find_all():
     return proveedor_service.find_all_proveedores()
 
-def find_all_with_pagination(filter: str = 0, pages: int = 0, elementPerPages: int = 10):
+def find_all_with_pagination(filter: str = "", pages: int = 1, elementPerPages: int = 10):
     return proveedor_service.find_all_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
 
 def find_one(id):

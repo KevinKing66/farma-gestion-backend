@@ -9,7 +9,7 @@ def find_all():
     return usuario_controller.find_all()
 
 @router.get("/filtro")
-def find_all_with_pagination(keyboard: str | None = "", page: int = 0, elementsPerPages: int = 5):
+def find_all_with_pagination(keyboard: str | None = "", page: int = 1, elementsPerPages: int = 10):
     return usuario_controller.find_all_by_keyword_and_pagination(filter=keyboard, pages=page, elementPerPages=elementsPerPages)
 
 

@@ -41,7 +41,7 @@ def delete(id_item):
     return {"message": "Item eliminado correctamente"}
 
 
-def find_all_medicamento_by_keyword_and_pagination(filter: str = 0, pages: int = 0, elementPerPages: int = 10):
+def find_all_medicamento_by_keyword_and_pagination(filter: str = "", pages: int = 0, elementPerPages: int = 10):
     
     try:
         return item_service.find_all_medicamento_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
