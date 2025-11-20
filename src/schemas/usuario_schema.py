@@ -22,4 +22,5 @@ class UsuarioUpdate(BaseModel):
 class UsuarioResponse(UsuarioBase):
     id_usuario: int
     rol: Literal["AUXILIAR", "REGENTE", "AUDITOR", "ADMIN"]
-    bloqueado_hasta: Optional[datetime]  # ✅ mejor que str para compatibilidad total
+    token: Optional[str] = None
+    bloqueado_hasta: Optional[datetime] = None  # ✅ mejor que str para compatibilidad total

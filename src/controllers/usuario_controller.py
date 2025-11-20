@@ -20,8 +20,9 @@ def find_one(id_usuario: int):
 def login(user: Login):
     try:
         return usuario_service.login(user)
-    except Exception as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as error:
+        print(f"Error: {error}")
+        raise HTTPException(status_code=403, detail=str(error))
 
 def create(user: UsuarioCreate):
     try:

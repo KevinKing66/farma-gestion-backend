@@ -81,14 +81,13 @@ def create_usuario(user: UsuarioCreate):
     conn.close()
 
 
-def login(user: Login) -> UsuarioResponse:
+def login(user: Login):
     user_db = get_usuario_by_email(user.correo)
     if not user_db:
         raise Exception("Usuario no encontrado")
 
     if not verify_password(user.contrasena, user_db.contrasena):
         raise Exception("Contraseña incorrecta")
-
     return UsuarioResponse(**user_db.__dict__)
 
 def update_usuario(id_usuario, user: UsuarioUpdate):
