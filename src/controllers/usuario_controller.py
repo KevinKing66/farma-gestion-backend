@@ -32,11 +32,16 @@ def create(user: UsuarioCreate):
         raise HTTPException(status_code=400, detail=str(e))
 
 def update(id_usuario, data: UsuarioUpdate):
-    usuario_service.update_usuario(
-        id_usuario,
-        data
-    )
-    return {"message": "Usuario actualizado correctamente"}
+    try:
+        usuario_service.update_usuario(
+            id_usuario,
+            data
+        )
+        return {"message": "Usuario actualizado correctamente"}
+    except Exception as error:
+        print(f"Error: {error}")
+        raise HTTPException(status_code=400, detail=str(error))
+
 
 def delete(id_usuario: int):
     usuario_service.delete_usuario(id_usuario)
