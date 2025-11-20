@@ -713,96 +713,6 @@ BEGIN
 END//
 DELIMITER ;
 
--- Eliminar ítem
-DELIMITER //
-CREATE PROCEDURE sp_eliminar_item(IN p_id INT)
-BEGIN
-    IF EXISTS (SELECT 1 FROM lotes WHERE id_item = p_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se puede eliminar: tiene lotes asociados';
-    END IF;
-    DELETE FROM items WHERE id_item = p_id;
-END//
-DELIMITER ;
-
--- LOTES
--- Crear lote
--- LOTES (refactor sin campos de posición)
-DELIMITER //
-CREATE PROCEDURE sp_crear_lote(
-  IN p_id_item INT,
-  IN p_id_proveedor INT,
-  IN p_codigo_lote VARCHAR(50),
-  IN p_fecha_vencimiento DATE,
-  IN p_costo_unitario DECIMAL(10,2)
-)
-BEGIN
-  IF p_fecha_vencimiento < CURRENT_DATE() THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fecha de vencimiento inválida';
-  END IF;
-  IF p_costo_unitario <= 0 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Costo unitario > 0';
-  END IF;
-
-  INSERT INTO lotes(id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario)
-  VALUES (p_id_item, p_id_proveedor, p_codigo_lote, p_fecha_vencimiento, p_costo_unitario);
-
-  SELECT LAST_INSERT_ID() AS id_lote;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_actualizar_lote(
-  IN p_id INT,
-  IN p_fecha_vencimiento DATE,
-  IN p_costo_unitario DECIMAL(10,2)
-)
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM lotes WHERE id_lote = p_id) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lote no existe';
-  END IF;
-  IF p_fecha_vencimiento < CURRENT_DATE() THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fecha de vencimiento inválida';
-  END IF;
-  IF p_costo_unitario <= 0 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Costo unitario > 0';
-  END IF;
-
-  UPDATE lotes
-    SET fecha_vencimiento = p_fecha_vencimiento,
-        costo_unitario    = p_costo_unitario
-  WHERE id_lote = p_id;
-END//
-DELIMITER ;
-
--- Obtener lote por ID
-DELIMITER //
-CREATE PROCEDURE sp_obtener_lote(IN p_id INT)
-BEGIN
-    SELECT * FROM lotes WHERE id_lote = p_id;
-END//
-DELIMITER ;
-
--- Listar todos los lotes
-DELIMITER //
-CREATE PROCEDURE sp_listar_lotes()
-BEGIN
-    SELECT * FROM lotes ORDER BY fecha_vencimiento DESC;
-END//
-DELIMITER ;
-
--- Eliminar lote
-DELIMITER //
-CREATE PROCEDURE sp_eliminar_lote(IN p_id INT)
-BEGIN
-    IF EXISTS (SELECT 1 FROM existencias WHERE id_lote = p_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se puede eliminar: tiene existencias asociadas';
-    END IF;
-    IF EXISTS (SELECT 1 FROM movimientos WHERE id_lote = p_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se puede eliminar: tiene movimientos registrados';
-    END IF;
-    DELETE FROM lotes WHERE id_lote = p_id;
-END//
-DELIMITER ;
 
 -- EXISTENCIAS
 -- Crear existencia
@@ -1681,7 +1591,7 @@ BEGIN
   COMMIT;
   SET @ctx_id_usuario = NULL;
 END//
-DELIMITER ;
+DELIMITER ;	
 
 -- HU-01 RF-01
 DELIMITER //
@@ -3036,6 +2946,1324 @@ END//
 DELIMITER ;
 
 
+-- procedimientos del front que se hicieron más adelante 
+
+DELIMITER //
+CREATE PROCEDURE sp_buscar_inventario(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        i.descripcion AS nombre,
+        l.codigo_lote AS lote,
+        i.tipo_item AS categoria,
+        COALESCE(SUM(e.saldo),0) AS stock,
+        DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
+        u.nombre AS ubicacion,
+        CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    WHERE 
+      p_filtro = '' 
+      OR  LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+      OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
+    ORDER BY i.descripcion ASC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE sp_obtener_detalle_lote(IN p_id_lote INT)
+BEGIN
+    SELECT i.descripcion AS nombre,
+           l.codigo_lote AS lote,
+           i.tipo_item AS categoria,
+           COALESCE(SUM(e.saldo),0) AS stock,
+           DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    WHERE l.id_lote = p_id_lote
+    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_estado_lote(IN p_id_lote INT, IN p_estado ENUM('ACTIVO','INACTIVO'))
+BEGIN
+    UPDATE lotes SET estado = p_estado WHERE id_lote = p_id_lote;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_exportar_inventario()
+BEGIN
+    SELECT i.descripcion AS nombre,
+           l.codigo_lote AS lote,
+           i.tipo_item AS categoria,
+           COALESCE(SUM(e.saldo),0) AS stock,
+           l.fecha_vencimiento,
+           u.nombre AS ubicacion
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre;
+END//
+DELIMITER ;
+
+
+
+DELIMITER //
+CREATE PROCEDURE sp_reportes_medicamentos_entregados_mes()
+BEGIN
+    SELECT COALESCE(SUM(mv.cantidad),0) AS total_entregados
+    FROM movimientos mv
+    WHERE mv.tipo = 'SALIDA'
+      AND MONTH(mv.fecha) = MONTH(CURDATE())
+      AND YEAR(mv.fecha) = YEAR(CURDATE());
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_reportes_alertas_resueltas()
+BEGIN
+    SELECT ROUND(
+        (SELECT COUNT(*) FROM notificaciones WHERE estado_confirmacion = 'REVISADA') /
+        (SELECT COUNT(*) FROM notificaciones) * 100, 2
+    ) AS porcentaje_resueltas;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_reportes_pedidos_completados()
+BEGIN
+    SELECT COUNT(*) AS pedidos_completados
+    FROM ordenes
+    WHERE estado = 'ENTREGADO'
+      AND MONTH(fecha_creacion) = MONTH(CURDATE())
+      AND YEAR(fecha_creacion) = YEAR(CURDATE());
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_reportes_medicamentos_entregados_por_semana()
+BEGIN
+    SELECT WEEK(mv.fecha) AS semana, SUM(mv.cantidad) AS total_entregados
+    FROM movimientos mv
+    WHERE mv.tipo = 'SALIDA'
+      AND MONTH(mv.fecha) = MONTH(CURDATE())
+      AND YEAR(mv.fecha) = YEAR(CURDATE())
+    GROUP BY WEEK(mv.fecha)
+    ORDER BY semana;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_reportes_ordenes_mes()
+BEGIN
+    SELECT o.id_orden AS orden,
+           i.descripcion AS medicamento,
+           u.nombre AS area_hospitalaria,
+           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
+           od.cantidad
+    FROM ordenes o
+    JOIN orden_detalle od ON od.id_orden = o.id_orden
+    JOIN items i ON i.id_item = od.id_item
+    JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
+    WHERE MONTH(o.fecha_creacion) = MONTH(CURDATE())
+      AND YEAR(o.fecha_creacion) = YEAR(CURDATE())
+    ORDER BY o.fecha_creacion DESC;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_exportar_reporte_ordenes_mes()
+BEGIN
+    SELECT o.id_orden, i.descripcion AS medicamento, u.nombre AS area_hospitalaria,
+           o.fecha_creacion, od.cantidad
+    FROM ordenes o
+    JOIN orden_detalle od ON od.id_orden = o.id_orden
+    JOIN items i ON i.id_item = od.id_item
+    JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
+    WHERE MONTH(o.fecha_creacion) = MONTH(CURDATE())
+      AND YEAR(o.fecha_creacion) = YEAR(CURDATE());
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_listar_ordenes()
+BEGIN
+    SELECT o.id_orden AS ID,
+           p.nombre_completo AS paciente,
+           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
+           o.estado
+    FROM ordenes o
+    JOIN pacientes p ON p.id_paciente = o.id_paciente
+    ORDER BY o.fecha_creacion DESC;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_listar_ordenes_por_estado(IN p_estado ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO'))
+BEGIN
+    SELECT o.id_orden AS ID,
+           p.nombre_completo AS paciente,
+           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
+           o.estado
+    FROM ordenes o
+    JOIN pacientes p ON p.id_paciente = o.id_paciente
+    WHERE o.estado = p_estado
+    ORDER BY o.fecha_creacion DESC;
+END//
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE sp_buscar_ordenes(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        o.id_orden AS ID,
+        p.nombre_completo AS paciente,
+        DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
+        o.estado
+    FROM ordenes o
+    JOIN pacientes p ON p.id_paciente = o.id_paciente
+    WHERE 
+      p_filtro = '' 
+      OR  LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) -- opcional si quieres buscar por ID
+    ORDER BY o.fecha_creacion DESC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE sp_crear_orden(
+    IN p_id_paciente INT,
+    IN p_id_usuario INT,
+    IN p_observaciones VARCHAR(255)
+)
+BEGIN
+    INSERT INTO ordenes(id_paciente, id_usuario, observaciones)
+    VALUES (p_id_paciente, p_id_usuario, p_observaciones);
+    SELECT LAST_INSERT_ID() AS id_orden;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_agregar_detalle_orden(
+    IN p_id_orden INT,
+    IN p_id_item INT,
+    IN p_cantidad DECIMAL(10,2)
+)
+BEGIN
+    INSERT INTO orden_detalle(id_orden, id_item, cantidad)
+    VALUES (p_id_orden, p_id_item, p_cantidad);
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_estado_orden(
+    IN p_id_orden INT,
+    IN p_estado ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO')
+)
+BEGIN
+    UPDATE ordenes SET estado = p_estado WHERE id_orden = p_id_orden;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_obtener_detalle_orden(IN p_id_orden INT)
+BEGIN
+    SELECT i.descripcion AS medicamento, od.cantidad
+    FROM orden_detalle od
+    JOIN items i ON i.id_item = od.id_item
+    WHERE od.id_orden = p_id_orden;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_listar_medicamentos()
+BEGIN
+    SELECT i.descripcion AS medicamento,
+           COALESCE(SUM(e.saldo),0) AS stock,
+           DATE_FORMAT(MIN(l.fecha_vencimiento), '%d/%m/%Y') AS vencimiento,
+           u.nombre AS area,
+           CASE WHEN i.uso_frecuente = 1 THEN 'Frecuente' ELSE 'No frecuente' END AS uso_frecuente
+    FROM items i
+    LEFT JOIN lotes l ON l.id_item = i.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
+    GROUP BY i.descripcion, u.nombre, i.uso_frecuente
+    ORDER BY i.descripcion ASC;
+END//
+DELIMITER ;
+
+
+
+DELIMITER //
+CREATE PROCEDURE sp_buscar_medicamento(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        i.descripcion AS nombre,
+        u.nombre AS area,
+        l.codigo_lote AS lote,
+        i.tipo_item AS categoria,
+        COALESCE(SUM(e.saldo),0) AS stock,
+        DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
+        CASE WHEN i.uso_frecuente = 1 THEN 'Frecuente' ELSE 'No frecuente' END AS uso_frecuente,
+        CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    WHERE 
+        (  
+          (
+            LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+          OR
+           LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+           )
+            OR
+          p_filtro = ''
+        )
+        AND
+          i.tipo_item = 'MEDICAMENTO'
+    GROUP BY 
+        i.descripcion, 
+        u.nombre,
+        l.codigo_lote, 
+        i.tipo_item, 
+        l.fecha_vencimiento,
+        i.uso_frecuente
+    ORDER BY i.descripcion ASC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_crear_medicamento(
+    IN p_id_ubicacion INT,
+    IN p_codigo VARCHAR(50),
+    IN p_descripcion VARCHAR(255),
+    IN p_unidad_medida VARCHAR(20),
+    IN p_stock_minimo INT,
+    IN p_uso_frecuente TINYINT
+)
+BEGIN
+    INSERT INTO items(id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo, uso_frecuente)
+    VALUES (p_id_ubicacion, p_codigo, p_descripcion, 'MEDICAMENTO', COALESCE(p_unidad_medida,'UND'), COALESCE(p_stock_minimo,0), COALESCE(p_uso_frecuente,0));
+    SELECT LAST_INSERT_ID() AS id_item;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_medicamento(
+    IN p_id_item INT,
+    IN p_descripcion VARCHAR(255),
+    IN p_stock_minimo INT,
+    IN p_uso_frecuente TINYINT
+)
+BEGIN
+    UPDATE items
+    SET descripcion = p_descripcion,
+        stock_minimo = p_stock_minimo,
+        uso_frecuente = p_uso_frecuente
+    WHERE id_item = p_id_item;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_obtener_medicamento(IN p_id_item INT)
+BEGIN
+    SELECT id_item, descripcion, stock_minimo, uso_frecuente
+    FROM items
+    WHERE id_item = p_id_item;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_items_bi_validacion_front
+BEFORE INSERT ON items
+FOR EACH ROW
+BEGIN
+    IF NEW.descripcion IS NULL OR TRIM(NEW.descripcion) = '' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Descripción obligatoria';
+    END IF;
+    IF EXISTS (SELECT 1 FROM items WHERE codigo = NEW.codigo) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Código de medicamento ya existe';
+    END IF;
+    IF NEW.uso_frecuente NOT IN (0,1) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido para uso frecuente';
+    END IF;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_ordenes_bi_validacion
+BEFORE INSERT ON ordenes
+FOR EACH ROW
+BEGIN
+    IF NEW.id_paciente IS NULL OR NOT EXISTS (SELECT 1 FROM pacientes WHERE id_paciente = NEW.id_paciente) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Paciente no válido para la orden';
+    END IF;
+    IF NEW.estado NOT IN ('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Estado de orden inválido';
+    END IF;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_orden_detalle_bi_validacion
+BEFORE INSERT ON orden_detalle
+FOR EACH ROW
+BEGIN
+    IF NEW.cantidad <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad debe ser mayor a cero';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM items WHERE id_item = NEW.id_item) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ítem no válido para la orden';
+    END IF;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_listar_pacientes()
+BEGIN
+    SELECT id_paciente, nombre_completo AS nombre, documento AS identificacion,
+           DATE_FORMAT(fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
+           DATE_FORMAT(ultima_atencion, '%d/%m/%Y') AS ultima_atencion
+    FROM pacientes
+    ORDER BY nombre_completo ASC;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_buscar_paciente(
+    IN p_filtro VARCHAR(100),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        p.id_paciente,
+        p.nombre_completo AS nombre,
+        p.documento AS identificacion,
+        DATE_FORMAT(p.fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
+        DATE_FORMAT(p.ultima_atencion, '%d/%m/%Y') AS ultima_atencion
+    FROM pacientes p
+    WHERE 
+      p_filtro = ''
+      OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+      OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    ORDER BY p.nombre_completo ASC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_crear_paciente(
+    IN p_tipo_documento ENUM('CEDULA','TARJETA DE IDENTIDAD','TARJETA DE EXTRANJERÍA'),
+    IN p_documento VARCHAR(25),
+    IN p_nombre_completo VARCHAR(50),
+    IN p_fecha_ingreso DATE
+)
+BEGIN
+    INSERT INTO pacientes(tipo_documento, documento, nombre_completo, fecha_ingreso)
+    VALUES (p_tipo_documento, p_documento, p_nombre_completo, p_fecha_ingreso);
+    SELECT LAST_INSERT_ID() AS id_paciente;
+END//
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_ultima_atencion(IN p_id_paciente INT)
+BEGIN
+    UPDATE pacientes SET ultima_atencion = CURDATE() WHERE id_paciente = p_id_paciente;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_paciente(IN p_id_paciente INT)
+BEGIN
+    DELETE FROM pacientes WHERE id_paciente = p_id_paciente;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_obtener_paciente(IN p_id_paciente INT)
+BEGIN
+    SELECT id_paciente, tipo_documento, documento, nombre_completo, fecha_ingreso, ultima_atencion
+    FROM pacientes WHERE id_paciente = p_id_paciente;
+END//
+DELIMITER ;
+
+
+DELIMITER //
+CREATE TRIGGER trg_pacientes_bi_validacion
+BEFORE INSERT ON pacientes
+FOR EACH ROW
+BEGIN
+    IF NEW.documento IS NULL OR TRIM(NEW.documento) = '' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Documento obligatorio';
+    END IF;
+    IF EXISTS (SELECT 1 FROM pacientes WHERE documento = NEW.documento) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Documento ya registrado';
+    END IF;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_stock_disponible()
+BEGIN
+    SELECT ROUND(
+        (SELECT COALESCE(SUM(saldo),0) FROM existencias) /
+        (SELECT COALESCE(SUM(stock_minimo),1) FROM items) * 100, 2
+    ) AS stock_disponible;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_alertas_vencimiento()
+BEGIN
+    SELECT COUNT(*) AS alertas_vencimiento FROM v_alertas_vencimiento;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_ordenes_pendientes()
+BEGIN
+    SELECT COUNT(*) AS ordenes_pendientes FROM ordenes WHERE estado = 'PENDIENTE';
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_medicamentos_mas_usados()
+BEGIN
+    SELECT i.descripcion AS medicamento, SUM(mv.cantidad) AS total_consumo
+    FROM movimientos mv
+    JOIN lotes l ON l.id_lote = mv.id_lote
+    JOIN items i ON i.id_item = l.id_item
+    WHERE mv.tipo = 'SALIDA'
+    GROUP BY i.descripcion
+    ORDER BY total_consumo DESC
+    LIMIT 5;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_distribucion_por_area()
+BEGIN
+    SELECT u.nombre AS area, SUM(mv.cantidad) AS consumo_total
+    FROM movimientos mv
+    JOIN ubicaciones u ON u.id_ubicacion = mv.id_ubicacion_destino
+    WHERE mv.tipo = 'SALIDA'
+    GROUP BY u.nombre;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_medicamentos_stock_critico()
+BEGIN
+    SELECT COUNT(*) AS medicamentos_stock_critico FROM v_alertas_stock_critico;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_medicamentos_proximos_vencer()
+BEGIN
+    SELECT i.descripcion AS medicamento, l.fecha_vencimiento, 
+           COALESCE(SUM(e.saldo),0) AS cantidad
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    WHERE l.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL (SELECT CAST(valor AS SIGNED) FROM parametros_sistema WHERE clave='dias_alerta_venc') DAY)
+    GROUP BY i.descripcion, l.fecha_vencimiento
+    ORDER BY l.fecha_vencimiento ASC
+    LIMIT 5;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_lista_ordenes_pendientes()
+BEGIN
+  SELECT 
+    o.id_orden,
+    p.nombre_completo AS paciente,
+    u.nombre AS area,
+    o.estado,
+    GROUP_CONCAT(CONCAT(i.descripcion, ' (', od.cantidad, ')') SEPARATOR ', ') AS medicamentos
+  FROM ordenes o
+  JOIN pacientes p ON p.id_paciente = o.id_paciente
+  JOIN orden_detalle od ON od.id_orden = o.id_orden
+  JOIN items i ON i.id_item = od.id_item
+  JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion     -- <== área por ítem
+  WHERE o.estado = 'PENDIENTE'
+  GROUP BY o.id_orden, p.nombre_completo, u.nombre, o.estado
+  ORDER BY o.fecha_creacion ASC
+  LIMIT 5;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_fecha_actual()
+BEGIN
+    SELECT DATE_FORMAT(NOW(), '%d de %M de %Y') AS fecha_actual;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_ultimo_backup()
+BEGIN
+    SELECT nombre_archivo, fecha_creacion, estado
+    FROM backups
+    ORDER BY fecha_creacion DESC
+    LIMIT 1;
+END//
+DELIMITER ; 
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_alertas_stock_bajo()
+BEGIN
+    SELECT COUNT(*) AS alertas_stock_bajo FROM v_alertas_stock_bajo;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_dashboard_sesiones_activas()
+BEGIN
+    SELECT COUNT(*) AS sesiones_activas FROM sesiones_activas WHERE activo = 1;
+END//
+DELIMITER //
+
+
+-- CRUD DE LOTES POR HU
+
+-- ### CRUD NUEVO ###
+
+-- ### CREATE #### - HU-01
+
+DELIMITER //
+CREATE PROCEDURE sp_crear_lote(
+    IN p_id_item INT,                  -- Puede ser NULL si se busca por nombre
+    IN p_nombre_item VARCHAR(255),     -- Nombre del medicamento
+    IN p_unidad_medida VARCHAR(20),    -- Unidad (ej. 'UND')
+    IN p_stock_minimo INT,             -- Stock mínimo
+    IN p_id_proveedor INT,             -- Proveedor
+    IN p_codigo_lote VARCHAR(50),      -- Código del lote
+    IN p_fecha_vencimiento DATE,       -- Fecha de vencimiento
+    IN p_costo_unitario DECIMAL(10,2), -- Costo unitario
+    IN p_id_ubicacion_destino INT,     -- Ubicación destino (almacén)
+    IN p_cantidad INT,                 -- Cantidad ingresada
+    IN p_id_usuario INT,               -- Usuario autenticado
+    IN p_motivo VARCHAR(255)           -- Motivo del ingreso
+)
+BEGIN
+    DECLARE v_id_item INT;
+    DECLARE v_id_lote INT;
+
+    -- Validaciones básicas
+    IF p_fecha_vencimiento < CURRENT_DATE() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fecha de vencimiento inválida';
+    END IF;
+    IF p_costo_unitario <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Costo unitario debe ser > 0';
+    END IF;
+    IF p_cantidad <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad debe ser > 0';
+    END IF;
+
+    -- Buscar ítem por ID o por nombre (ignorando mayúsculas y tildes)
+    SELECT id_item INTO v_id_item
+    FROM items
+    WHERE (p_id_item IS NOT NULL AND id_item = p_id_item)
+       OR (p_nombre_item IS NOT NULL AND LOWER(REPLACE(descripcion,'á','a')) LIKE LOWER(REPLACE(p_nombre_item,'á','a')))
+    LIMIT 1;
+
+    -- Si no existe, crear ítem automáticamente
+    IF v_id_item IS NULL THEN
+        INSERT INTO items(id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo)
+        VALUES(p_id_ubicacion_destino, p_nombre_item, p_nombre_item, 'MEDICAMENTO', COALESCE(p_unidad_medida,'UND'), COALESCE(p_stock_minimo,0));
+        SET v_id_item = LAST_INSERT_ID();
+    END IF;
+
+    -- Validar duplicidad de lote para el ítem
+    IF EXISTS (SELECT 1 FROM lotes WHERE id_item = v_id_item AND codigo_lote = p_codigo_lote) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El lote ya existe para este medicamento';
+    END IF;
+
+    -- Contexto para auditoría
+    SET @ctx_id_usuario = p_id_usuario;
+
+    START TRANSACTION;
+
+    -- Crear lote
+    INSERT INTO lotes(id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario)
+    VALUES(v_id_item, p_id_proveedor, p_codigo_lote, p_fecha_vencimiento, p_costo_unitario);
+    SET v_id_lote = LAST_INSERT_ID();
+
+    -- Registrar movimiento tipo INGRESO
+    INSERT INTO movimientos(id_lote, id_usuario, tipo, cantidad, id_ubicacion_destino, motivo)
+    VALUES(v_id_lote, p_id_usuario, 'INGRESO', p_cantidad, p_id_ubicacion_destino, COALESCE(p_motivo,'Recepción de proveedor'));
+
+    -- Trigger trg_mov_ai ajustará existencias y auditoría automáticamente
+
+    COMMIT;
+
+    -- Retornar información completa
+    SELECT v_id_item AS item_id, p_nombre_item AS nombre_item, v_id_lote AS lote_id,
+           p_fecha_vencimiento AS fecha_vencimiento, p_cantidad AS cantidad_ingresada;
+END//
+DELIMITER ;
+
+
+-- ### READ ###
+
+DELIMITER //
+CREATE PROCEDURE sp_listar_lotes(
+    IN p_filtro VARCHAR(100),
+    IN p_orden VARCHAR(20),       -- 'FECHA', 'COSTO', 'STOCK'
+    IN p_offset INT,
+    IN p_limit INT
+)
+BEGIN
+    SELECT 
+        l.id_lote,
+        l.codigo_lote,
+        l.fecha_vencimiento,
+        l.costo_unitario,
+        l.estado,
+        i.descripcion AS producto,
+        i.codigo AS codigo_item,
+        p.nombre AS proveedor,
+        COALESCE(u.nombre, 'SIN UBICACIÓN') AS ubicacion,
+        COALESCE(SUM(e.saldo), 0) AS stock_total
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    JOIN proveedores p ON p.id_proveedor = l.id_proveedor
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    WHERE p_filtro IS NULL 
+       OR LOWER(l.codigo_lote) LIKE CONCAT('%', LOWER(p_filtro), '%')
+       OR LOWER(i.descripcion) LIKE CONCAT('%', LOWER(p_filtro), '%')
+       OR LOWER(p.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
+       OR LOWER(u.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
+    GROUP BY l.id_lote, l.codigo_lote, l.fecha_vencimiento, l.costo_unitario, l.estado,
+             i.descripcion, i.codigo, p.nombre, u.nombre
+    ORDER BY 
+        CASE p_orden
+            WHEN 'FECHA' THEN l.fecha_vencimiento
+            WHEN 'COSTO' THEN l.costo_unitario
+            WHEN 'STOCK' THEN stock_total
+            ELSE l.fecha_vencimiento
+        END DESC
+    LIMIT p_limit OFFSET p_offset;
+END//
+DELIMITER ;
+
+
+-- ### UPDATE ###
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_lote(
+    IN p_id_lote INT,
+    IN p_codigo_lote VARCHAR(50),
+    IN p_fecha_vencimiento DATE,
+    IN p_costo_unitario DECIMAL(10,2),
+    IN p_estado ENUM('ACTIVO','INACTIVO'),
+    IN p_id_item INT,
+    IN p_id_proveedor INT,
+    IN p_cantidad INT,              -- Para ajuste opcional
+    IN p_id_ubicacion INT,          -- Ubicación para ajuste
+    IN p_id_usuario INT,
+    IN p_motivo VARCHAR(255)
+)
+BEGIN
+    -- Validación de existencia
+    IF NOT EXISTS (SELECT 1 FROM lotes WHERE id_lote = p_id_lote) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lote no existe';
+    END IF;
+
+    -- Validaciones condicionales
+    IF p_fecha_vencimiento IS NOT NULL AND p_fecha_vencimiento < CURRENT_DATE() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fecha de vencimiento inválida';
+    END IF;
+    IF p_costo_unitario IS NOT NULL AND p_costo_unitario <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Costo unitario debe ser > 0';
+    END IF;
+    IF p_cantidad IS NOT NULL AND p_cantidad <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad para ajuste debe ser > 0';
+    END IF;
+    IF p_cantidad IS NOT NULL AND p_id_ubicacion IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ubicación obligatoria para ajuste';
+    END IF;
+
+    -- Contexto para auditoría
+    SET @ctx_id_usuario = p_id_usuario;
+
+    START TRANSACTION;
+
+    -- Actualización dinámica del lote
+    UPDATE lotes
+    SET codigo_lote = COALESCE(p_codigo_lote, codigo_lote),
+        fecha_vencimiento = COALESCE(p_fecha_vencimiento, fecha_vencimiento),
+        costo_unitario = COALESCE(p_costo_unitario, costo_unitario),
+        estado = COALESCE(p_estado, estado),
+        id_item = COALESCE(p_id_item, id_item),
+        id_proveedor = COALESCE(p_id_proveedor, id_proveedor)
+    WHERE id_lote = p_id_lote;
+
+    -- Registrar movimiento tipo AJUSTE si se envía cantidad
+    IF p_cantidad IS NOT NULL THEN
+        INSERT INTO movimientos(id_lote, id_usuario, tipo, cantidad, id_ubicacion_origen, motivo)
+        VALUES(p_id_lote, p_id_usuario, 'AJUSTE', p_cantidad, p_id_ubicacion, 
+               COALESCE(p_motivo, 'Ajuste por actualización de lote'));
+    END IF;
+
+    COMMIT;
+
+    -- Retornar registro actualizado
+    SELECT l.id_lote, l.codigo_lote, l.fecha_vencimiento, l.costo_unitario, l.estado,
+           i.descripcion AS producto, p.nombre AS proveedor
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    JOIN proveedores p ON p.id_proveedor = l.id_proveedor
+    WHERE l.id_lote = p_id_lote;
+END//
+DELIMITER ;
+
+
+### DELETE ### 
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_lote(
+    IN p_id_lote INT,
+    IN p_motivo VARCHAR(255),
+    IN p_id_usuario INT
+)
+BEGIN
+    DECLARE v_tiene_existencias INT DEFAULT 0;
+    DECLARE v_tiene_movimientos INT DEFAULT 0;
+    DECLARE v_saldo_total INT DEFAULT 0;
+
+    -- Validar existencia del lote
+    IF NOT EXISTS (SELECT 1 FROM lotes WHERE id_lote = p_id_lote) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lote no existe';
+    END IF;
+
+    -- Verificar relaciones
+    SELECT COUNT(*) INTO v_tiene_existencias FROM existencias WHERE id_lote = p_id_lote;
+    SELECT COUNT(*) INTO v_tiene_movimientos FROM movimientos WHERE id_lote = p_id_lote;
+    SELECT COALESCE(SUM(saldo),0) INTO v_saldo_total FROM existencias WHERE id_lote = p_id_lote;
+
+    -- Contexto para auditoría
+    SET @ctx_id_usuario = p_id_usuario;
+
+    START TRANSACTION;
+
+    IF v_tiene_existencias = 0 AND v_tiene_movimientos = 0 THEN
+        -- Eliminar lote
+        DELETE FROM lotes WHERE id_lote = p_id_lote;
+    ELSE
+        -- Desactivar lote
+        UPDATE lotes
+        SET estado = 'INACTIVO'
+        WHERE id_lote = p_id_lote;
+
+        -- Ajustar existencias si hay saldo
+        IF v_saldo_total > 0 THEN
+            INSERT INTO movimientos(id_lote, id_usuario, tipo, cantidad, id_ubicacion_origen, motivo)
+            SELECT p_id_lote, p_id_usuario, 'AJUSTE', v_saldo_total, id_ubicacion,
+                   CONCAT('Ajuste por desactivación: ', p_motivo)
+            FROM existencias
+            WHERE id_lote = p_id_lote;
+        END IF;
+
+        -- Registrar motivo en auditoría lógica
+        INSERT INTO auditoria(tabla_afectada, pk_afectada, accion, valores_antes, valores_despues, id_usuario, fecha)
+        VALUES('lotes', CAST(p_id_lote AS CHAR), 'UPDATE',
+               JSON_OBJECT('estado', 'ACTIVO'),
+               JSON_OBJECT('estado', 'INACTIVO', 'motivo_desactivacion', p_motivo),
+               p_id_usuario, NOW());
+    END IF;
+
+    COMMIT;
+
+    -- Retornar resultado
+    SELECT p_id_lote AS id_lote,
+           CASE WHEN v_tiene_existencias = 0 AND v_tiene_movimientos = 0 THEN 'ELIMINADO' ELSE 'DESACTIVADO' END AS accion,
+           p_motivo AS motivo,
+           v_saldo_total AS saldo_ajustado;
+END//
+DELIMITER ;
+
+
+-- ---------- 2) PACIENTES: CRUD con contexto (wrappers) ---------- 
+-- Respetan los SP ya existentes, pero garantizan @ctx_id_usuario para que los triggers auditen. 
+
+DELIMITER //
+CREATE PROCEDURE sp_crear_paciente_ctx(
+  IN p_tipo_documento ENUM('CEDULA','TARJETA DE IDENTIDAD','TARJETA DE EXTRANJERÍA'),
+  IN p_documento      VARCHAR(25),
+  IN p_nombre         VARCHAR(50),
+  IN p_fecha_ingreso  DATE,
+  IN p_id_usuario     INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_paciente(p_tipo_documento, p_documento, p_nombre, p_fecha_ingreso);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_paciente_ctx(
+  IN p_id_paciente    INT,
+  IN p_tipo_documento ENUM('CEDULA','TARJETA DE IDENTIDAD','TARJETA DE EXTRANJERÍA'),
+  IN p_documento      VARCHAR(25),
+  IN p_nombre         VARCHAR(50),
+  IN p_fecha_ingreso  DATE,
+  IN p_id_usuario     INT
+)
+BEGIN
+  /* Update general, respetando diseño: triggers auditan el cambio. */
+  SET @ctx_id_usuario = p_id_usuario;
+
+  UPDATE pacientes
+  SET tipo_documento = COALESCE(p_tipo_documento, tipo_documento),
+      documento      = COALESCE(p_documento, documento),
+      nombre_completo= COALESCE(p_nombre, nombre_completo),
+      fecha_ingreso  = COALESCE(p_fecha_ingreso, fecha_ingreso)
+  WHERE id_paciente = p_id_paciente;
+
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_paciente_ctx(
+  IN p_id_paciente INT,
+  IN p_id_usuario  INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_eliminar_paciente(p_id_paciente);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+
+
+-- ---------- 5) ÓRDENES: CRUD con contexto (wrappers) ---------- 
+-- Reutiliza los SP existentes, asegurando @ctx_id_usuario para que los triggers auditen. 
+
+DELIMITER //
+CREATE PROCEDURE sp_crear_orden_ctx(
+  IN p_id_paciente   INT,
+  IN p_id_usuario    INT,
+  IN p_observaciones VARCHAR(255)
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_orden(p_id_paciente, p_id_usuario, p_observaciones);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_agregar_detalle_orden_ctx(
+  IN p_id_orden  INT,
+  IN p_id_item   INT,
+  IN p_cantidad  DECIMAL(10,2),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_agregar_detalle_orden(p_id_orden, p_id_item, p_cantidad);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_estado_orden_ctx(
+  IN p_id_orden INT,
+  IN p_estado   ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO'),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_actualizar_estado_orden(p_id_orden, p_estado);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- ---------- 6) Órdenes: completar CRUD - Delete y Update de detalle ---------- 
+-- Delete de orden: primero borra detalles (FK), luego la orden. Triggers auditan ambas operaciones. 
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_orden_ctx(
+  IN p_id_orden   INT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+
+  /* Eliminar detalle(s) antes de eliminar la orden (sin ON DELETE CASCADE) */
+  DELETE FROM orden_detalle WHERE id_orden = p_id_orden;
+  DELETE FROM ordenes WHERE id_orden = p_id_orden;
+
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+/* Update de detalle de orden (p.ej., corregir cantidad o ítem) */
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_detalle_orden_ctx(
+  IN p_id_detalle INT,
+  IN p_id_orden   INT,
+  IN p_id_item    INT,
+  IN p_cantidad   DECIMAL(10,2),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+
+  UPDATE orden_detalle
+  SET id_orden = COALESCE(p_id_orden, id_orden),
+      id_item  = COALESCE(p_id_item, id_item),
+      cantidad = COALESCE(p_cantidad, cantidad)
+  WHERE id_detalle = p_id_detalle;
+
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- UBICACIONES
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_ubicacion_ctx(
+  IN p_nombre VARCHAR(100),
+  IN p_tipo ENUM('ALMACEN','SERVICIO'),
+  IN p_activo TINYINT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_ubicacion(p_nombre, p_tipo, p_activo);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_ubicacion_ctx(
+  IN p_id INT,
+  IN p_nombre VARCHAR(100),
+  IN p_tipo ENUM('ALMACEN','SERVICIO'),
+  IN p_activo TINYINT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_actualizar_ubicacion(p_id, p_nombre, p_tipo, p_activo);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_ubicacion_ctx(
+  IN p_id INT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_eliminar_ubicacion(p_id);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- ITEMS (MEDICAMENTOS)
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_medicamento_ctx(
+  IN p_id_ubicacion INT,
+  IN p_codigo VARCHAR(50),
+  IN p_descripcion VARCHAR(255),
+  IN p_unidad_medida VARCHAR(20),
+  IN p_stock_minimo INT,
+  IN p_uso_frecuente TINYINT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_medicamento(p_id_ubicacion, p_codigo, p_descripcion, p_unidad_medida, p_stock_minimo, p_uso_frecuente);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_medicamento_ctx(
+  IN p_id_item INT,
+  IN p_descripcion VARCHAR(255),
+  IN p_stock_minimo INT,
+  IN p_uso_frecuente TINYINT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_actualizar_medicamento(p_id_item, p_descripcion, p_stock_minimo, p_uso_frecuente);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- USUARIOS
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_usuario_ctx(
+  IN p_nombre_completo VARCHAR(150),
+  IN p_correo VARCHAR(150),
+  IN p_rol ENUM('AUXILIAR','REGENTE','AUDITOR','ADMIN','PROVEEDOR'),
+  IN p_contrasena VARCHAR(255),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_usuario(p_nombre_completo, p_correo, p_rol, p_contrasena);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_usuario_ctx(
+  IN p_id INT,
+  IN p_nombre_completo VARCHAR(150),
+  IN p_correo VARCHAR(150),
+  IN p_rol ENUM('AUXILIAR','REGENTE','AUDITOR','ADMIN','PROVEEDOR'),
+  IN p_contrasena VARCHAR(255),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_actualizar_usuario(p_id, p_nombre_completo, p_correo, p_rol, p_contrasena);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_usuario_ctx(
+  IN p_id INT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_eliminar_usuario(p_id);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- PROVEEDORES
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_proveedor_ctx(
+  IN p_nombre VARCHAR(150),
+  IN p_nit VARCHAR(50),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_proveedor(p_nombre, p_nit);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_proveedor_ctx(
+  IN p_id INT,
+  IN p_nombre VARCHAR(150),
+  IN p_nit VARCHAR(50),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_actualizar_proveedor(p_id, p_nombre, p_nit);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_proveedor_ctx(
+  IN p_id INT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_eliminar_proveedor(p_id);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- BACKUPS
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_backup_ctx(
+  IN p_nombre_archivo VARCHAR(255),
+  IN p_ruta_archivo TEXT,
+  IN p_generado_por INT,
+  IN p_estado ENUM('EXITOSO','ERROR'),
+  IN p_mensaje TEXT,
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_crear_backup(p_nombre_archivo, p_ruta_archivo, p_generado_por, p_estado, p_mensaje);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- LOTES_POSICIONES (solo el CREATE)
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_lote_posicion_ctx(
+  IN p_id_lote INT,
+  IN p_id_ubicacion INT,
+  IN p_estante VARCHAR(20),
+  IN p_nivel VARCHAR(20),
+  IN p_pasillo VARCHAR(20),
+  IN p_asignado_por INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_asignado_por;
+  CALL sp_crear_lote_posicion(p_id_lote, p_id_ubicacion, p_estante, p_nivel, p_pasillo, p_asignado_por);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- NOTIFICACIONES (UPDATE con contexto)
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_notificacion_ctx(
+  IN p_id BIGINT,
+  IN p_estado ENUM('PENDIENTE','ENVIADA','ERROR'),
+  IN p_detalle_error VARCHAR(255),
+  IN p_confirmado_por INT,
+  IN p_estado_confirmacion ENUM('PENDIENTE','REVISADA'),
+  IN p_id_usuario INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_usuario;
+  CALL sp_actualizar_notificacion(p_id, p_estado, p_detalle_error, p_confirmado_por, p_estado_confirmacion);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- TOKENS_RECUPERACION (generación con contexto)
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_generar_token_recuperacion_ctx(
+  IN p_id_usuario INT,
+  IN p_token VARCHAR(255),
+  IN p_id_admin INT
+)
+BEGIN
+  SET @ctx_id_usuario = p_id_admin;
+  CALL sp_generar_token_recuperacion(p_id_usuario, p_token);
+  SET @ctx_id_usuario = NULL;
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- PARAMETROS_SISTEMA (wrappers con auditoría explícita)
+-- -------------------------------
+DELIMITER //
+CREATE PROCEDURE sp_crear_parametro_ctx(
+  IN p_clave VARCHAR(50),
+  IN p_valor VARCHAR(100),
+  IN p_descripcion VARCHAR(255),
+  IN p_id_usuario INT
+)
+BEGIN
+  CALL sp_crear_parametro(p_clave, p_valor, p_descripcion);
+  CALL sp_auditar_encadenado(
+    'parametros_sistema', p_clave, 'INSERT',
+    NULL,
+    JSON_OBJECT('valor', p_valor, 'descripcion', p_descripcion),
+    p_id_usuario, NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_actualizar_parametro_ctx(
+  IN p_clave VARCHAR(50),
+  IN p_valor VARCHAR(100),
+  IN p_descripcion VARCHAR(255),
+  IN p_id_usuario INT
+)
+BEGIN
+  DECLARE v_val VARCHAR(100); DECLARE v_desc VARCHAR(255);
+  SELECT valor, descripcion INTO v_val, v_desc FROM parametros_sistema WHERE clave = p_clave;
+
+  CALL sp_actualizar_parametro(p_clave, p_valor, p_descripcion);
+  CALL sp_auditar_encadenado(
+    'parametros_sistema', p_clave, 'UPDATE',
+    JSON_OBJECT('valor', v_val, 'descripcion', v_desc),
+    JSON_OBJECT('valor', p_valor, 'descripcion', p_descripcion),
+    p_id_usuario, NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE sp_eliminar_parametro_ctx(
+  IN p_clave VARCHAR(50),
+  IN p_id_usuario INT
+)
+BEGIN
+  DECLARE v_val VARCHAR(100); DECLARE v_desc VARCHAR(255);
+  SELECT valor, descripcion INTO v_val, v_desc FROM parametros_sistema WHERE clave = p_clave;
+
+  CALL sp_eliminar_parametro(p_clave);
+  CALL sp_auditar_encadenado(
+    'parametros_sistema', p_clave, 'DELETE',
+    JSON_OBJECT('valor', v_val, 'descripcion', v_desc),
+    NULL, p_id_usuario, NOW()
+  );
+END//
+DELIMITER ;
+
+
 /* ===========================================================
 		     TRIGGERS (HU) (LOGICA DE NEGOCIO)
    =========================================================== */
@@ -3868,6 +5096,558 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'AJUSTE debe afectar solo una ubicación';
   END IF;
 END//
+DELIMITER ;
+
+
+-- ---------- 1) PACIENTES: Triggers de auditoría AI/AU/AD ---------- 
+DELIMITER //
+CREATE TRIGGER trg_pacientes_ai_auditoria
+AFTER INSERT ON pacientes
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'pacientes',
+    CAST(NEW.id_paciente AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_paciente', NEW.id_paciente,
+      'tipo_documento', NEW.tipo_documento,
+      'documento', NEW.documento,
+      'nombre', NEW.nombre_completo,
+      'fecha_ingreso', IFNULL(DATE_FORMAT(NEW.fecha_ingreso, '%Y-%m-%d'), 'NULL')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_pacientes_au_auditoria
+AFTER UPDATE ON pacientes
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'pacientes',
+    CAST(NEW.id_paciente AS CHAR),
+    'UPDATE',
+    JSON_OBJECT(
+      'tipo_documento', OLD.tipo_documento,
+      'documento',      OLD.documento,
+      'nombre',         OLD.nombre_completo,
+      'fecha_ingreso',  IFNULL(DATE_FORMAT(OLD.fecha_ingreso, '%Y-%m-%d'), 'NULL'),
+      'ultima_atencion',IFNULL(DATE_FORMAT(OLD.ultima_atencion, '%Y-%m-%d'), 'NULL')
+    ),
+    JSON_OBJECT(
+      'tipo_documento', NEW.tipo_documento,
+      'documento',      NEW.documento,
+      'nombre',         NEW.nombre_completo,
+      'fecha_ingreso',  IFNULL(DATE_FORMAT(NEW.fecha_ingreso, '%Y-%m-%d'), 'NULL'),
+      'ultima_atencion',IFNULL(DATE_FORMAT(NEW.ultima_atencion, '%Y-%m-%d'), 'NULL')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_pacientes_ad_auditoria
+AFTER DELETE ON pacientes
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'pacientes',
+    CAST(OLD.id_paciente AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'id_paciente', OLD.id_paciente,
+      'documento',   OLD.documento,
+      'nombre',      OLD.nombre_completo
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+
+-- ---------- 3) ORDENES: Triggers de auditoría AI/AU/AD ---------- 
+DELIMITER //
+CREATE TRIGGER trg_ordenes_ai_auditoria
+AFTER INSERT ON ordenes
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'ordenes',
+    CAST(NEW.id_orden AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_orden', NEW.id_orden,
+      'id_paciente', NEW.id_paciente,
+      'id_usuario', NEW.id_usuario,
+      'estado', NEW.estado,
+      'observaciones', IFNULL(NEW.observaciones,''),
+      'fecha_creacion', DATE_FORMAT(NEW.fecha_creacion, '%Y-%m-%d %H:%i:%s')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_ordenes_au_auditoria
+AFTER UPDATE ON ordenes
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'ordenes',
+    CAST(NEW.id_orden AS CHAR),
+    'UPDATE',
+    JSON_OBJECT(
+      'id_paciente', OLD.id_paciente,
+      'id_usuario',  OLD.id_usuario,
+      'estado',      OLD.estado,
+      'observaciones', IFNULL(OLD.observaciones,''),
+      'fecha_creacion', DATE_FORMAT(OLD.fecha_creacion, '%Y-%m-%d %H:%i:%s')
+    ),
+    JSON_OBJECT(
+      'id_paciente', NEW.id_paciente,
+      'id_usuario',  NEW.id_usuario,
+      'estado',      NEW.estado,
+      'observaciones', IFNULL(NEW.observaciones,''),
+      'fecha_creacion', DATE_FORMAT(NEW.fecha_creacion, '%Y-%m-%d %H:%i:%s')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_ordenes_ad_auditoria
+AFTER DELETE ON ordenes
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'ordenes',
+    CAST(OLD.id_orden AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'id_orden',   OLD.id_orden,
+      'id_paciente',OLD.id_paciente,
+      'estado',     OLD.estado
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+-- ---------- 4) ORDEN_DETALLE: Triggers de auditoría AI/AU/AD ---------- 
+DELIMITER //
+CREATE TRIGGER trg_orden_detalle_ai_auditoria
+AFTER INSERT ON orden_detalle
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'orden_detalle',
+    CAST(NEW.id_detalle AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_detalle', NEW.id_detalle,
+      'id_orden',   NEW.id_orden,
+      'id_item',    NEW.id_item,
+      'cantidad',   NEW.cantidad
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_orden_detalle_au_auditoria
+AFTER UPDATE ON orden_detalle
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'orden_detalle',
+    CAST(NEW.id_detalle AS CHAR),
+    'UPDATE',
+    JSON_OBJECT(
+      'id_orden', OLD.id_orden,
+      'id_item',  OLD.id_item,
+      'cantidad', OLD.cantidad
+    ),
+    JSON_OBJECT(
+      'id_orden', NEW.id_orden,
+      'id_item',  NEW.id_item,
+      'cantidad', NEW.cantidad
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_orden_detalle_ad_auditoria
+AFTER DELETE ON orden_detalle
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'orden_detalle',
+    CAST(OLD.id_detalle AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'id_orden', OLD.id_orden,
+      'id_item',  OLD.id_item,
+      'cantidad', OLD.cantidad
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- NOTIFICACIONES (AI/AU/AD)
+-- -------------------------------
+DROP TRIGGER IF EXISTS trg_notificaciones_ai_aud;
+DELIMITER //
+CREATE TRIGGER trg_notificaciones_ai_aud
+AFTER INSERT ON notificaciones
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'notificaciones',
+    CAST(NEW.id_notificacion AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'tipo', NEW.tipo,
+      'destinatario', NEW.destinatario,
+      'estado', NEW.estado,
+      'payload', NEW.payload,
+      'fecha_creacion', DATE_FORMAT(NEW.fecha_creacion, '%Y-%m-%d %H:%i:%s')
+    ),
+    COALESCE(@ctx_id_usuario, NEW.confirmado_por),
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_notificaciones_au_aud;
+DELIMITER //
+CREATE TRIGGER trg_notificaciones_au_aud
+AFTER UPDATE ON notificaciones
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'notificaciones',
+    CAST(NEW.id_notificacion AS CHAR),
+    'UPDATE',
+    JSON_OBJECT(
+      'estado', OLD.estado,
+      'detalle_error', OLD.detalle_error,
+      'confirmado_por', OLD.confirmado_por,
+      'estado_confirmacion', OLD.estado_confirmacion,
+      'fecha_confirmacion', IFNULL(DATE_FORMAT(OLD.fecha_confirmacion,'%Y-%m-%d %H:%i:%s'),'NULL')
+    ),
+    JSON_OBJECT(
+      'estado', NEW.estado,
+      'detalle_error', NEW.detalle_error,
+      'confirmado_por', NEW.confirmado_por,
+      'estado_confirmacion', NEW.estado_confirmacion,
+      'fecha_confirmacion', IFNULL(DATE_FORMAT(NEW.fecha_confirmacion,'%Y-%m-%d %H:%i:%s'),'NULL')
+    ),
+    COALESCE(@ctx_id_usuario, NEW.confirmado_por),
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_notificaciones_ad_aud;
+DELIMITER //
+CREATE TRIGGER trg_notificaciones_ad_aud
+AFTER DELETE ON notificaciones
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'notificaciones',
+    CAST(OLD.id_notificacion AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'tipo', OLD.tipo,
+      'destinatario', OLD.destinatario,
+      'estado', OLD.estado
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- SESIONES_ACTIVAS (AI/AU/AD)
+-- -------------------------------
+DROP TRIGGER IF EXISTS trg_sesiones_ai_aud;
+DELIMITER //
+CREATE TRIGGER trg_sesiones_ai_aud
+AFTER INSERT ON sesiones_activas
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'sesiones_activas',
+    CAST(NEW.id_sesion AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_usuario', NEW.id_usuario,
+      'ip', NEW.ip,
+      'user_agent', IFNULL(NEW.user_agent,''),
+      'activo', NEW.activo,
+      'hora_inicio', DATE_FORMAT(NEW.hora_inicio,'%Y-%m-%d %H:%i:%s')
+    ),
+    COALESCE(@ctx_id_usuario, NEW.id_usuario),
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_sesiones_au_aud;
+DELIMITER //
+CREATE TRIGGER trg_sesiones_au_aud
+AFTER UPDATE ON sesiones_activas
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'sesiones_activas',
+    CAST(NEW.id_sesion AS CHAR),
+    'UPDATE',
+    JSON_OBJECT(
+      'activo', OLD.activo,
+      'hora_cierre', IFNULL(DATE_FORMAT(OLD.hora_cierre,'%Y-%m-%d %H:%i:%s'),'NULL')
+    ),
+    JSON_OBJECT(
+      'activo', NEW.activo,
+      'hora_cierre', IFNULL(DATE_FORMAT(NEW.hora_cierre,'%Y-%m-%d %H:%i:%s'),'NULL')
+    ),
+    COALESCE(@ctx_id_usuario, NEW.id_usuario),
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_sesiones_ad_aud;
+DELIMITER //
+CREATE TRIGGER trg_sesiones_ad_aud
+AFTER DELETE ON sesiones_activas
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'sesiones_activas',
+    CAST(OLD.id_sesion AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'id_usuario', OLD.id_usuario,
+      'ip', OLD.ip
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- ETIQUETAS_QR (AI/AU/AD)
+-- -------------------------------
+DROP TRIGGER IF EXISTS trg_etiquetas_ai_aud;
+DELIMITER //
+CREATE TRIGGER trg_etiquetas_ai_aud
+AFTER INSERT ON etiquetas_qr
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'etiquetas_qr',
+    CAST(NEW.id_etiqueta AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_lote', NEW.id_lote,
+      'contenido_qr', NEW.contenido_qr,
+      'fecha_generacion', DATE_FORMAT(NEW.fecha_generacion,'%Y-%m-%d %H:%i:%s')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_etiquetas_au_aud;
+DELIMITER //
+CREATE TRIGGER trg_etiquetas_au_aud
+AFTER UPDATE ON etiquetas_qr
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'etiquetas_qr',
+    CAST(NEW.id_etiqueta AS CHAR),
+    'UPDATE',
+    JSON_OBJECT('contenido_qr', OLD.contenido_qr),
+    JSON_OBJECT('contenido_qr', NEW.contenido_qr),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_etiquetas_ad_aud;
+DELIMITER //
+CREATE TRIGGER trg_etiquetas_ad_aud
+AFTER DELETE ON etiquetas_qr
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'etiquetas_qr',
+    CAST(OLD.id_etiqueta AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'id_lote', OLD.id_lote,
+      'contenido_qr', OLD.contenido_qr
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- COMPROBANTES_RECEPCION (AI/AU/AD)
+-- -------------------------------
+DROP TRIGGER IF EXISTS trg_comprobantes_ai_aud;
+DELIMITER //
+CREATE TRIGGER trg_comprobantes_ai_aud
+AFTER INSERT ON comprobantes_recepcion
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'comprobantes_recepcion',
+    CAST(NEW.id_comprobante AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_movimiento', NEW.id_movimiento,
+      'id_proveedor', NEW.id_proveedor,
+      'canal', NEW.canal,
+      'entregado', NEW.entregado,
+      'fecha_creacion', DATE_FORMAT(NEW.fecha_creacion,'%Y-%m-%d %H:%i:%s')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_comprobantes_au_aud;
+DELIMITER //
+CREATE TRIGGER trg_comprobantes_au_aud
+AFTER UPDATE ON comprobantes_recepcion
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'comprobantes_recepcion',
+    CAST(NEW.id_comprobante AS CHAR),
+    'UPDATE',
+    JSON_OBJECT(
+      'entregado', OLD.entregado,
+      'fecha_entrega', IFNULL(DATE_FORMAT(OLD.fecha_entrega,'%Y-%m-%d %H:%i:%s'),'NULL')
+    ),
+    JSON_OBJECT(
+      'entregado', NEW.entregado,
+      'fecha_entrega', IFNULL(DATE_FORMAT(NEW.fecha_entrega,'%Y-%m-%d %H:%i:%s'),'NULL')
+    ),
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_comprobantes_ad_aud;
+DELIMITER //
+CREATE TRIGGER trg_comprobantes_ad_aud
+AFTER DELETE ON comprobantes_recepcion
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'comprobantes_recepcion',
+    CAST(OLD.id_comprobante AS CHAR),
+    'DELETE',
+    JSON_OBJECT(
+      'id_movimiento', OLD.id_movimiento,
+      'id_proveedor', OLD.id_proveedor
+    ),
+    NULL,
+    @ctx_id_usuario,
+    NOW()
+  );
+END//
+DELIMITER ;
+
+-- -------------------------------
+-- TOKENS_RECUPERACION (AI/AU)
+-- -------------------------------
+DROP TRIGGER IF EXISTS trg_tokens_ai_aud;
+DELIMITER //
+CREATE TRIGGER trg_tokens_ai_aud
+AFTER INSERT ON tokens_recuperacion
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'tokens_recuperacion',
+    CAST(NEW.id_token AS CHAR),
+    'INSERT',
+    NULL,
+    JSON_OBJECT(
+      'id_usuario', NEW.id_usuario,
+      'token', NEW.token,
+      'expiracion', DATE_FORMAT(NEW.expiracion,'%Y-%m-%d %H:%i:%s'),
+      'usado', NEW.usado
+    ),
+    COALESCE(@ctx_id_usuario, NEW.id_usuario),
+    NOW()
+  );
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_tokens_au_aud;
+DELIMITER //
+CREATE TRIGGER trg_tokens_au_aud
+AFTER UPDATE ON tokens_recuperacion
+FOR EACH ROW
+BEGIN
+  CALL sp_auditar_encadenado(
+    'tokens_recuperacion',
+    CAST(NEW.id_token AS CHAR),
+    'UPDATE',
+    JSON_OBJECT('usado', OLD.usado),
+    JSON_OBJECT('usado', NEW.usado),
+    COALESCE(@ctx_id_usuario, NEW.id_usuario),
+    NOW()
+  );
+END//
+DELIMITER ;
 
 /* ===========================================================
 		     VISTAS (HU) (LOGICA DE NEGOCIO)
@@ -4232,636 +6012,6 @@ GROUP BY i.id_item,i.codigo,i.descripcion
 HAVING SUM(COALESCE(e.saldo,0)) < 0;
 
 
--- procedimientos para el front
-
-DELIMITER //
-CREATE PROCEDURE sp_listar_inventario()
-BEGIN
-    SELECT i.descripcion AS nombre,
-           l.codigo_lote AS lote,
-           i.tipo_item AS categoria,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
-           u.nombre AS ubicacion,
-           CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
-    ORDER BY i.descripcion ASC;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_buscar_inventario(
-    IN p_filtro VARCHAR(100),
-    IN p_page INT,
-    IN p_limit INT
-)
-BEGIN
-    DECLARE v_offset INT;
-    SET v_offset = (p_page - 1) * p_limit;
-
-    SELECT 
-        i.descripcion AS nombre,
-        l.codigo_lote AS lote,
-        i.tipo_item AS categoria,
-        COALESCE(SUM(e.saldo),0) AS stock,
-        DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
-        u.nombre AS ubicacion,
-        CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    WHERE 
-      p_filtro = '' 
-      OR  LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-      OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
-    ORDER BY i.descripcion ASC
-    LIMIT p_limit OFFSET v_offset;
-END//
-DELIMITER ;
 
 
-DELIMITER //
-CREATE PROCEDURE sp_exportar_inventario()
-BEGIN
-    SELECT i.descripcion AS nombre,
-           l.codigo_lote AS lote,
-           i.tipo_item AS categoria,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           l.fecha_vencimiento,
-           u.nombre AS ubicacion
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre;
-END//
-DELIMITER ;
-
-
-DELIMITER //
-CREATE PROCEDURE sp_obtener_detalle_lote(IN p_id_lote INT)
-BEGIN
-    SELECT i.descripcion AS nombre,
-           l.codigo_lote AS lote,
-           i.tipo_item AS categoria,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    WHERE l.id_lote = p_id_lote
-    GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_actualizar_estado_lote(IN p_id_lote INT, IN p_estado ENUM('ACTIVO','INACTIVO'))
-BEGIN
-    UPDATE lotes SET estado = p_estado WHERE id_lote = p_id_lote;
-END//
-DELIMITER ;
-
-
-
-DELIMITER //
-CREATE PROCEDURE sp_reportes_alertas_resueltas()
-BEGIN
-    SELECT ROUND(
-        (SELECT COUNT(*) FROM notificaciones WHERE estado_confirmacion = 'REVISADA') /
-        (SELECT COUNT(*) FROM notificaciones) * 100, 2
-    ) AS porcentaje_resueltas;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_reportes_pedidos_completados()
-BEGIN
-    SELECT COUNT(*) AS pedidos_completados
-    FROM ordenes
-    WHERE estado = 'ENTREGADO'
-      AND MONTH(fecha_creacion) = MONTH(CURDATE())
-      AND YEAR(fecha_creacion) = YEAR(CURDATE());
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_reportes_medicamentos_entregados_por_semana()
-BEGIN
-    SELECT WEEK(mv.fecha) AS semana, SUM(mv.cantidad) AS total_entregados
-    FROM movimientos mv
-    WHERE mv.tipo = 'SALIDA'
-      AND MONTH(mv.fecha) = MONTH(CURDATE())
-      AND YEAR(mv.fecha) = YEAR(CURDATE())
-    GROUP BY WEEK(mv.fecha)
-    ORDER BY semana;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_reportes_ordenes_mes()
-BEGIN
-    SELECT o.id_orden AS orden,
-           i.descripcion AS medicamento,
-           u.nombre AS area_hospitalaria,
-           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
-           od.cantidad
-    FROM ordenes o
-    JOIN orden_detalle od ON od.id_orden = o.id_orden
-    JOIN items i ON i.id_item = od.id_item
-    JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
-    WHERE MONTH(o.fecha_creacion) = MONTH(CURDATE())
-      AND YEAR(o.fecha_creacion) = YEAR(CURDATE())
-    ORDER BY o.fecha_creacion DESC;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_exportar_reporte_ordenes_mes()
-BEGIN
-    SELECT o.id_orden, i.descripcion AS medicamento, u.nombre AS area_hospitalaria,
-           o.fecha_creacion, od.cantidad
-    FROM ordenes o
-    JOIN orden_detalle od ON od.id_orden = o.id_orden
-    JOIN items i ON i.id_item = od.id_item
-    JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
-    WHERE MONTH(o.fecha_creacion) = MONTH(CURDATE())
-      AND YEAR(o.fecha_creacion) = YEAR(CURDATE());
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_listar_ordenes()
-BEGIN
-    SELECT o.id_orden AS ID,
-           p.nombre_completo AS paciente,
-           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
-           o.estado
-    FROM ordenes o
-    JOIN pacientes p ON p.id_paciente = o.id_paciente
-    ORDER BY o.fecha_creacion DESC;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_listar_ordenes_por_estado(IN p_estado ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO'))
-BEGIN
-    SELECT o.id_orden AS ID,
-           p.nombre_completo AS paciente,
-           DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
-           o.estado
-    FROM ordenes o
-    JOIN pacientes p ON p.id_paciente = o.id_paciente
-    WHERE o.estado = p_estado
-    ORDER BY o.fecha_creacion DESC;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_buscar_ordenes(
-    IN p_filtro VARCHAR(100),
-    IN p_page INT,
-    IN p_limit INT
-)
-BEGIN
-    DECLARE v_offset INT;
-    SET v_offset = (p_page - 1) * p_limit;
-
-    SELECT 
-        o.id_orden AS ID,
-        p.nombre_completo AS paciente,
-        DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
-        o.estado
-    FROM ordenes o
-    JOIN pacientes p ON p.id_paciente = o.id_paciente
-    WHERE 
-      p_filtro = '' 
-      OR  LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) -- opcional si quieres buscar por ID
-    ORDER BY o.fecha_creacion DESC
-    LIMIT p_limit OFFSET v_offset;
-END//
-DELIMITER ;
-
-
-DELIMITER //
-CREATE PROCEDURE sp_crear_orden(
-    IN p_id_paciente INT,
-    IN p_id_usuario INT,
-    IN p_observaciones VARCHAR(255)
-)
-BEGIN
-    INSERT INTO ordenes(id_paciente, id_usuario, observaciones)
-    VALUES (p_id_paciente, p_id_usuario, p_observaciones);
-    SELECT LAST_INSERT_ID() AS id_orden;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_agregar_detalle_orden(
-    IN p_id_orden INT,
-    IN p_id_item INT,
-    IN p_cantidad DECIMAL(10,2)
-)
-BEGIN
-    INSERT INTO orden_detalle(id_orden, id_item, cantidad)
-    VALUES (p_id_orden, p_id_item, p_cantidad);
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_actualizar_estado_orden(
-    IN p_id_orden INT,
-    IN p_estado ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO')
-)
-BEGIN
-    UPDATE ordenes SET estado = p_estado WHERE id_orden = p_id_orden;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_obtener_detalle_orden(IN p_id_orden INT)
-BEGIN
-    SELECT i.descripcion AS medicamento, od.cantidad
-    FROM orden_detalle od
-    JOIN items i ON i.id_item = od.id_item
-    WHERE od.id_orden = p_id_orden;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_listar_medicamentos()
-BEGIN
-    SELECT i.descripcion AS medicamento,
-           COALESCE(SUM(e.saldo),0) AS stock,
-           DATE_FORMAT(MIN(l.fecha_vencimiento), '%d/%m/%Y') AS vencimiento,
-           u.nombre AS area,
-           CASE WHEN i.uso_frecuente = 1 THEN 'Frecuente' ELSE 'No frecuente' END AS uso_frecuente
-    FROM items i
-    LEFT JOIN lotes l ON l.id_item = i.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion
-    GROUP BY i.descripcion, u.nombre, i.uso_frecuente
-    ORDER BY i.descripcion ASC;
-END//
-DELIMITER ;
-
-
-DELIMITER //
-CREATE PROCEDURE sp_reportes_medicamentos_entregados_mes()
-BEGIN
-    SELECT COALESCE(SUM(mv.cantidad),0) AS total_entregados
-    FROM movimientos mv
-    WHERE mv.tipo = 'SALIDA'
-      AND MONTH(mv.fecha) = MONTH(CURDATE())
-      AND YEAR(mv.fecha) = YEAR(CURDATE());
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_buscar_medicamento(
-    IN p_filtro VARCHAR(100),
-    IN p_page INT,
-    IN p_limit INT
-)
-BEGIN
-    DECLARE v_offset INT;
-    SET v_offset = (p_page - 1) * p_limit;
-
-    SELECT 
-        i.descripcion AS nombre,
-        u.nombre AS area,
-        l.codigo_lote AS lote,
-        i.tipo_item AS categoria,
-        COALESCE(SUM(e.saldo),0) AS stock,
-        DATE_FORMAT(l.fecha_vencimiento, '%d/%m/%Y') AS fecha_vencimiento,
-        CASE WHEN i.uso_frecuente = 1 THEN 'Frecuente' ELSE 'No frecuente' END AS uso_frecuente,
-        CASE WHEN COALESCE(SUM(e.saldo),0) > 0 THEN 'Activo' ELSE 'Inactivo' END AS estado
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    WHERE 
-        (  
-          (
-            LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-          OR
-           LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-           )
-            OR
-          p_filtro = ''
-        )
-        AND
-          i.tipo_item = 'MEDICAMENTO'
-    GROUP BY 
-        i.descripcion, 
-        u.nombre,
-        l.codigo_lote, 
-        i.tipo_item, 
-        l.fecha_vencimiento,
-        i.uso_frecuente
-    ORDER BY i.descripcion ASC
-    LIMIT p_limit OFFSET v_offset;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_crear_medicamento(
-    IN p_id_ubicacion INT,
-    IN p_codigo VARCHAR(50),
-    IN p_descripcion VARCHAR(255),
-    IN p_unidad_medida VARCHAR(20),
-    IN p_stock_minimo INT,
-    IN p_uso_frecuente TINYINT
-)
-BEGIN
-    INSERT INTO items(id_ubicacion, codigo, descripcion, tipo_item, unidad_medida, stock_minimo, uso_frecuente)
-    VALUES (p_id_ubicacion, p_codigo, p_descripcion, 'MEDICAMENTO', COALESCE(p_unidad_medida,'UND'), COALESCE(p_stock_minimo,0), COALESCE(p_uso_frecuente,0));
-    SELECT LAST_INSERT_ID() AS id_item;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_actualizar_medicamento(
-    IN p_id_item INT,
-    IN p_descripcion VARCHAR(255),
-    IN p_stock_minimo INT,
-    IN p_uso_frecuente TINYINT
-)
-BEGIN
-    UPDATE items
-    SET descripcion = p_descripcion,
-        stock_minimo = p_stock_minimo,
-        uso_frecuente = p_uso_frecuente
-    WHERE id_item = p_id_item;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_obtener_medicamento(IN p_id_item INT)
-BEGIN
-    SELECT id_item, descripcion, stock_minimo, uso_frecuente
-    FROM items
-    WHERE id_item = p_id_item;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE TRIGGER trg_items_bi_validacion_front
-BEFORE INSERT ON items
-FOR EACH ROW
-BEGIN
-    IF NEW.descripcion IS NULL OR TRIM(NEW.descripcion) = '' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Descripción obligatoria';
-    END IF;
-    IF EXISTS (SELECT 1 FROM items WHERE codigo = NEW.codigo) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Código de medicamento ya existe';
-    END IF;
-    IF NEW.uso_frecuente NOT IN (0,1) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido para uso frecuente';
-    END IF;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE TRIGGER trg_ordenes_bi_validacion
-BEFORE INSERT ON ordenes
-FOR EACH ROW
-BEGIN
-    IF NEW.id_paciente IS NULL OR NOT EXISTS (SELECT 1 FROM pacientes WHERE id_paciente = NEW.id_paciente) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Paciente no válido para la orden';
-    END IF;
-    IF NEW.estado NOT IN ('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO') THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Estado de orden inválido';
-    END IF;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE TRIGGER trg_orden_detalle_bi_validacion
-BEFORE INSERT ON orden_detalle
-FOR EACH ROW
-BEGIN
-    IF NEW.cantidad <= 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad debe ser mayor a cero';
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM items WHERE id_item = NEW.id_item) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ítem no válido para la orden';
-    END IF;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_listar_pacientes()
-BEGIN
-    SELECT id_paciente, nombre_completo AS nombre, documento AS identificacion,
-           DATE_FORMAT(fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
-           DATE_FORMAT(ultima_atencion, '%d/%m/%Y') AS ultima_atencion
-    FROM pacientes
-    ORDER BY nombre_completo ASC;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_buscar_paciente(
-    IN p_filtro VARCHAR(100),
-    IN p_page INT,
-    IN p_limit INT
-)
-BEGIN
-    DECLARE v_offset INT;
-    SET v_offset = (p_page - 1) * p_limit;
-
-    SELECT 
-        p.id_paciente,
-        p.nombre_completo AS nombre,
-        p.documento AS identificacion,
-        DATE_FORMAT(p.fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
-        DATE_FORMAT(p.ultima_atencion, '%d/%m/%Y') AS ultima_atencion
-    FROM pacientes p
-    WHERE 
-      p_filtro = ''
-      OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-      OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-    ORDER BY p.nombre_completo ASC
-    LIMIT p_limit OFFSET v_offset;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_crear_paciente(
-    IN p_tipo_documento ENUM('CEDULA','TARJETA DE IDENTIDAD','TARJETA DE EXTRANJERÍA'),
-    IN p_documento VARCHAR(25),
-    IN p_nombre_completo VARCHAR(50),
-    IN p_fecha_ingreso DATE
-)
-BEGIN
-    INSERT INTO pacientes(tipo_documento, documento, nombre_completo, fecha_ingreso)
-    VALUES (p_tipo_documento, p_documento, p_nombre_completo, p_fecha_ingreso);
-    SELECT LAST_INSERT_ID() AS id_paciente;
-END//
-
-DELIMITER //
-CREATE PROCEDURE sp_actualizar_ultima_atencion(IN p_id_paciente INT)
-BEGIN
-    UPDATE pacientes SET ultima_atencion = CURDATE() WHERE id_paciente = p_id_paciente;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_eliminar_paciente(IN p_id_paciente INT)
-BEGIN
-    DELETE FROM pacientes WHERE id_paciente = p_id_paciente;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_obtener_paciente(IN p_id_paciente INT)
-BEGIN
-    SELECT id_paciente, tipo_documento, documento, nombre_completo, fecha_ingreso, ultima_atencion
-    FROM pacientes WHERE id_paciente = p_id_paciente;
-END//
-DELIMITER ;
-
-
-DELIMITER //
-CREATE TRIGGER trg_pacientes_bi_validacion
-BEFORE INSERT ON pacientes
-FOR EACH ROW
-BEGIN
-    IF NEW.documento IS NULL OR TRIM(NEW.documento) = '' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Documento obligatorio';
-    END IF;
-    IF EXISTS (SELECT 1 FROM pacientes WHERE documento = NEW.documento) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Documento ya registrado';
-    END IF;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_stock_disponible()
-BEGIN
-    SELECT ROUND(
-        (SELECT COALESCE(SUM(saldo),0) FROM existencias) /
-        (SELECT COALESCE(SUM(stock_minimo),1) FROM items) * 100, 2
-    ) AS stock_disponible;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_alertas_vencimiento()
-BEGIN
-    SELECT COUNT(*) AS alertas_vencimiento FROM v_alertas_vencimiento;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_ordenes_pendientes()
-BEGIN
-    SELECT COUNT(*) AS ordenes_pendientes FROM ordenes WHERE estado = 'PENDIENTE';
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_medicamentos_mas_usados()
-BEGIN
-    SELECT i.descripcion AS medicamento, SUM(mv.cantidad) AS total_consumo
-    FROM movimientos mv
-    JOIN lotes l ON l.id_lote = mv.id_lote
-    JOIN items i ON i.id_item = l.id_item
-    WHERE mv.tipo = 'SALIDA'
-    GROUP BY i.descripcion
-    ORDER BY total_consumo DESC
-    LIMIT 5;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_distribucion_por_area()
-BEGIN
-    SELECT u.nombre AS area, SUM(mv.cantidad) AS consumo_total
-    FROM movimientos mv
-    JOIN ubicaciones u ON u.id_ubicacion = mv.id_ubicacion_destino
-    WHERE mv.tipo = 'SALIDA'
-    GROUP BY u.nombre;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_medicamentos_stock_critico()
-BEGIN
-    SELECT COUNT(*) AS medicamentos_stock_critico FROM v_alertas_stock_critico;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_medicamentos_proximos_vencer()
-BEGIN
-    SELECT i.descripcion AS medicamento, l.fecha_vencimiento, 
-           COALESCE(SUM(e.saldo),0) AS cantidad
-    FROM lotes l
-    JOIN items i ON i.id_item = l.id_item
-    LEFT JOIN existencias e ON e.id_lote = l.id_lote
-    WHERE l.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL (SELECT CAST(valor AS SIGNED) FROM parametros_sistema WHERE clave='dias_alerta_venc') DAY)
-    GROUP BY i.descripcion, l.fecha_vencimiento
-    ORDER BY l.fecha_vencimiento ASC
-    LIMIT 5;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_lista_ordenes_pendientes()
-BEGIN
-  SELECT 
-    o.id_orden,
-    p.nombre_completo AS paciente,
-    u.nombre AS area,
-    o.estado,
-    GROUP_CONCAT(CONCAT(i.descripcion, ' (', od.cantidad, ')') SEPARATOR ', ') AS medicamentos
-  FROM ordenes o
-  JOIN pacientes p ON p.id_paciente = o.id_paciente
-  JOIN orden_detalle od ON od.id_orden = o.id_orden
-  JOIN items i ON i.id_item = od.id_item
-  JOIN ubicaciones u ON u.id_ubicacion = i.id_ubicacion     -- <== área por ítem
-  WHERE o.estado = 'PENDIENTE'
-  GROUP BY o.id_orden, p.nombre_completo, u.nombre, o.estado
-  ORDER BY o.fecha_creacion ASC
-  LIMIT 5;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_fecha_actual()
-BEGIN
-    SELECT DATE_FORMAT(NOW(), '%d de %M de %Y') AS fecha_actual;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_ultimo_backup()
-BEGIN
-    SELECT nombre_archivo, fecha_creacion, estado
-    FROM backups
-    ORDER BY fecha_creacion DESC
-    LIMIT 1;
-END//
-DELIMITER ; 
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_alertas_stock_bajo()
-BEGIN
-    SELECT COUNT(*) AS alertas_stock_bajo FROM v_alertas_stock_bajo;
-END//
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE sp_dashboard_sesiones_activas()
-BEGIN
-    SELECT COUNT(*) AS sesiones_activas FROM sesiones_activas WHERE activo = 1;
-END//
-DELIMITER ;
+            
