@@ -413,9 +413,11 @@ BEGIN
         pr.correo,
         pr.direccion
     FROM proveedores pr
-    WHERE LOWER(pr.nombre) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(pr.correo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(pr.direccion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    WHERE
+      p_filtro = '' 
+      OR LOWER(pr.nombre) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+      OR LOWER(pr.correo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+      OR LOWER(pr.direccion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
     ORDER BY pr.nombre ASC
     LIMIT p_limit OFFSET v_offset;
 END//
@@ -592,7 +594,8 @@ BEGIN
     FROM usuarios u
     WHERE 
         (
-            LOWER(u.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+            p_filtro = '' 
+            OR LOWER(u.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
             OR LOWER(u.correo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
             OR LOWER(u.rol) LIKE LOWER(CONCAT('%', p_filtro, '%'))
         )
@@ -4272,8 +4275,10 @@ BEGIN
     JOIN items i ON i.id_item = l.id_item
     LEFT JOIN existencias e ON e.id_lote = l.id_lote
     LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    WHERE LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    WHERE 
+      p_filtro = '' 
+      OR  LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+      OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
     GROUP BY i.descripcion, l.codigo_lote, i.tipo_item, l.fecha_vencimiento, u.nombre
     ORDER BY i.descripcion ASC
     LIMIT p_limit OFFSET v_offset;
@@ -4434,7 +4439,9 @@ BEGIN
         o.estado
     FROM ordenes o
     JOIN pacientes p ON p.id_paciente = o.id_paciente
-    WHERE LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    WHERE 
+      p_filtro = '' 
+      OR  LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
        OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) -- opcional si quieres buscar por ID
     ORDER BY o.fecha_creacion DESC
     LIMIT p_limit OFFSET v_offset;
@@ -4540,9 +4547,15 @@ BEGIN
     LEFT JOIN existencias e ON e.id_lote = l.id_lote
     LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
     WHERE 
-          (LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-        OR
-          LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%')))
+        (  
+          (
+            LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+          OR
+           LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+           )
+            OR
+          p_filtro = ''
+        )
         AND
           i.tipo_item = 'MEDICAMENTO'
     GROUP BY 
@@ -4671,8 +4684,10 @@ BEGIN
         DATE_FORMAT(p.fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
         DATE_FORMAT(p.ultima_atencion, '%d/%m/%Y') AS ultima_atencion
     FROM pacientes p
-    WHERE LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    WHERE 
+      p_filtro = ''
+      OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+      OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
     ORDER BY p.nombre_completo ASC
     LIMIT p_limit OFFSET v_offset;
 END//
