@@ -1,5 +1,6 @@
 import mysql
 from src.config.database import get_connection
+from src.schemas.lote_schema import LoteCreate, LoteUpdate
 
 def get_all_lotes():
     conn = get_connection()
@@ -37,13 +38,13 @@ def get_lote_by_id(id_lote):
         raise Exception("Error al obtener detalle del lote")
 
 
-def create_lote(id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario):
+def create_lote(lote: LoteCreate):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.callproc(
             "sp_crear_lote",
-            (id_item, id_proveedor, codigo_lote, fecha_vencimiento, costo_unitario)
+            (lote.id_item, lote.nombre_item, lote.unidad_medida, lote.stock_minimo, lote.id_proveedor, lote.codigo_lote, lote.fecha_vencimiento, lote.costo_unitario, lote.id_ubicacion_destino, lote.cantidad, lote.id_usuario, lote.motivo)
         )
 
         # ✅ Consumir el resultado del SELECT dentro del SP

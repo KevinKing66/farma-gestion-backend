@@ -11,13 +11,7 @@ def get_one(id_lote):
     return lote_service.get_lote_by_id(id_lote)
 
 def create(data: LoteCreate):
-    return lote_service.create_lote(
-        data.id_item,
-        data.id_proveedor,
-        data.codigo_lote,
-        data.fecha_vencimiento,
-        data.costo_unitario
-    )
+    return lote_service.create_lote(lote=data)
 
 def update(id, data: LoteUpdate):
     lote_service.update_lote(
