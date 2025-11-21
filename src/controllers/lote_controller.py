@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 from src.schemas.lote_schema import LoteCreate, LoteUpdate
 from src.service import lote_service
-from src.schemas.detalle_lote_schema import DetalleLoteResponseSchema
 from src.schemas.exportar_inventario_schema import ExportarInventarioResponseSchema
 
 

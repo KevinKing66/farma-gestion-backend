@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from schemas.lote_schema import LoteCreate
+from src.schemas.lote_schema import LoteCreate
 from src.controllers import movimiento_controller
 from src.schemas.ingreso_schema import IngresoSchema
 from src.schemas.salida_schema import SalidaSchema
