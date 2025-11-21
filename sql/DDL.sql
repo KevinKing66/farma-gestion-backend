@@ -1683,12 +1683,17 @@ CREATE PROCEDURE sp_transferir_stock(
 )
 BEGIN
   DECLARE v_saldo INT;
-  IF p_cantidad <= 0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad debe ser > 0'; END IF;
+
+  IF p_cantidad <= 0 THEN 
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad debe ser > 0'; 
+  END IF;
+
   IF p_id_ubicacion_origen = p_id_ubicacion_destino THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Origen y Destino no pueden ser iguales';
   END IF;
 
   START TRANSACTION;
+
   SELECT saldo INTO v_saldo
   FROM existencias
   WHERE id_lote = p_id_lote AND id_ubicacion = p_id_ubicacion_origen
@@ -1703,10 +1708,11 @@ BEGIN
     (id_lote, id_usuario, tipo, cantidad, id_ubicacion_origen, id_ubicacion_destino, motivo)
   VALUES
     (p_id_lote, p_id_usuario, 'TRANSFERENCIA', p_cantidad, p_id_ubicacion_origen, p_id_ubicacion_destino, COALESCE(p_motivo,'Reabastecimiento'));
+
   COMMIT;
-  END //
-  DELIMITER;
-  
+END//
+DELIMITER ;
+
 -- HU-04, RF-05
 DELIMITER //
 CREATE PROCEDURE sp_mov_transferir_stock(
@@ -3644,7 +3650,6 @@ DELIMITER ;
 
 
 -- ### READ ###
-
 DELIMITER //
 CREATE PROCEDURE sp_listar_lotes(
     IN p_filtro VARCHAR(100),
@@ -3662,25 +3667,26 @@ BEGIN
         i.descripcion AS producto,
         i.codigo AS codigo_item,
         p.nombre AS proveedor,
-        COALESCE(u.nombre, 'SIN UBICACIÓN') AS ubicacion,
+        COALESCE(u.nombre, 'SIN UBICACION') AS ubicacion,
         COALESCE(SUM(e.saldo), 0) AS stock_total
     FROM lotes l
     JOIN items i ON i.id_item = l.id_item
     JOIN proveedores p ON p.id_proveedor = l.id_proveedor
     LEFT JOIN existencias e ON e.id_lote = l.id_lote
     LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    WHERE p_filtro IS NULL 
-       OR LOWER(l.codigo_lote) LIKE CONCAT('%', LOWER(p_filtro), '%')
-       OR LOWER(i.descripcion) LIKE CONCAT('%', LOWER(p_filtro), '%')
-       OR LOWER(p.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
-       OR LOWER(u.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
+    WHERE
+        p_filtro = '' 
+        OR LOWER(l.codigo_lote) LIKE CONCAT('%', LOWER(p_filtro), '%')
+        OR LOWER(i.descripcion) LIKE CONCAT('%', LOWER(p_filtro), '%')
+        OR LOWER(p.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
+        OR LOWER(COALESCE(u.nombre, '')) LIKE CONCAT('%', LOWER(p_filtro), '%')
     GROUP BY l.id_lote, l.codigo_lote, l.fecha_vencimiento, l.costo_unitario, l.estado,
              i.descripcion, i.codigo, p.nombre, u.nombre
     ORDER BY 
-        CASE p_orden
-            WHEN 'FECHA' THEN l.fecha_vencimiento
-            WHEN 'COSTO' THEN l.costo_unitario
-            WHEN 'STOCK' THEN stock_total
+        CASE 
+            WHEN p_orden = 'FECHA' THEN l.fecha_vencimiento
+            WHEN p_orden = 'COSTO' THEN l.costo_unitario
+            WHEN p_orden = 'STOCK' THEN SUM(e.saldo)
             ELSE l.fecha_vencimiento
         END DESC
     LIMIT p_limit OFFSET p_offset;
