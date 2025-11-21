@@ -1677,6 +1677,7 @@ DELIMITER;
 
 -- HU-04, RF-05
 DELIMITER //
+DELIMITER //
 CREATE PROCEDURE sp_transferir_stock(
   IN p_id_lote INT, IN p_id_ubicacion_origen INT, IN p_id_ubicacion_destino INT,
   IN p_cantidad INT, IN p_id_usuario INT, IN p_motivo VARCHAR(255)
@@ -3653,11 +3654,13 @@ DELIMITER ;
 DELIMITER //
 CREATE PROCEDURE sp_listar_lotes(
     IN p_filtro VARCHAR(100),
-    IN p_orden VARCHAR(20),       -- 'FECHA', 'COSTO', 'STOCK'
-    IN p_offset INT,
+    IN p_page INT,
     IN p_limit INT
 )
 BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
     SELECT 
         l.id_lote,
         l.codigo_lote,
@@ -3680,18 +3683,14 @@ BEGIN
         OR LOWER(i.descripcion) LIKE CONCAT('%', LOWER(p_filtro), '%')
         OR LOWER(p.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
         OR LOWER(COALESCE(u.nombre, '')) LIKE CONCAT('%', LOWER(p_filtro), '%')
-    GROUP BY l.id_lote, l.codigo_lote, l.fecha_vencimiento, l.costo_unitario, l.estado,
-             i.descripcion, i.codigo, p.nombre, u.nombre
-    ORDER BY 
-        CASE 
-            WHEN p_orden = 'FECHA' THEN l.fecha_vencimiento
-            WHEN p_orden = 'COSTO' THEN l.costo_unitario
-            WHEN p_orden = 'STOCK' THEN SUM(e.saldo)
-            ELSE l.fecha_vencimiento
-        END DESC
-    LIMIT p_limit OFFSET p_offset;
+    GROUP BY 
+        l.id_lote, l.codigo_lote, l.fecha_vencimiento, l.costo_unitario, l.estado,
+        i.descripcion, i.codigo, p.nombre, u.nombre
+    ORDER BY l.fecha_vencimiento DESC
+    LIMIT p_limit OFFSET v_offset;
 END//
 DELIMITER ;
+
 
 
 -- ### UPDATE ###
