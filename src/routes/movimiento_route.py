@@ -1,8 +1,8 @@
 from fastapi import APIRouter
+from schemas.lote_schema import LoteCreate
 from src.controllers import movimiento_controller
 from src.schemas.ingreso_schema import IngresoSchema
 from src.schemas.salida_schema import SalidaSchema
-from src.schemas.crear_lote_schema import CrearLoteSchema
 from src.schemas.registrar_ingreso_schema import RegistrarIngresoSchema
 from src.models.movimiento_model import TransferenciaModel
 
@@ -26,7 +26,7 @@ def registrar_salida(data: SalidaSchema):
     return movimiento_controller.registrar_salida(data)
 
 @router.post("/crear-lote")
-def crear_lote(data: CrearLoteSchema):
+def crear_lote(data: LoteCreate):
     return movimiento_controller.crear_lote(data)
 
 @router.post("/registrar-ingreso")

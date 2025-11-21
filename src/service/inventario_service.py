@@ -43,3 +43,23 @@ def get_medicamento_by_keyword_and_pagination(filter: str, pages: int = 0, eleme
     except Exception as e:
         print(f"Error en sp_buscar_medicamento: {e}")
         raise Exception("Error al buscar inventario")
+
+
+def exportar_inventario():
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.callproc("sp_exportar_inventario")
+
+        results = []
+        for stored in cursor.stored_results():
+            rows = stored.fetchall()
+            cols = [d[0] for d in stored.description]
+            for row in rows:
+                results.append(dict(zip(cols, row)))
+
+        return results
+
+    finally:
+        cursor.close()
+        conn.close()
