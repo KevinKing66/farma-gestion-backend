@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from src.schemas.item_schema import ItemTranferir
 from src.schemas.lote_schema import LoteCreate, LoteUpdate
 from src.controllers import lote_controller
 
@@ -8,7 +9,12 @@ router = APIRouter(prefix="/lotes")
 def get_all():
     return lote_controller.get_all()
 
-@router.get("/{id_lote}")
+@router.get("/filtro")
+def find_all_with_pagination(keyboard: str | None = "", page: int = 1, elementsPerPages: int = 10):
+    return lote_controller.find_all_with_pagination(filter=keyboard, page=page, elementPerPages=elementsPerPages)
+
+
+@router.get("/id/{id_lote}")
 def get_one(id_lote: int):
     return lote_controller.get_one(id_lote)
 
@@ -23,3 +29,8 @@ def update(id_lote: int, data: LoteUpdate):
 @router.delete("/{id_lote}")
 def delete(id_lote: int):
     return lote_controller.delete(id_lote)
+
+
+@router.put("/change-location")
+def change_location(data: ItemTranferir):
+    return lote_controller.update_location(data)
