@@ -1,3 +1,5 @@
+from pydantic import BaseModel
+
 class Movimiento:
     def __init__(
         self,
@@ -16,3 +18,13 @@ class Movimiento:
         self.id_ubicacion_origen = id_ubicacion_origen
         self.id_ubicacion_destino = id_ubicacion_destino
         self.motivo = motivo
+        
+
+class TransferenciaModel(BaseModel):
+    id_lote: int
+    id_ubicacion_origen: int
+    id_ubicacion_destino: int
+    cantidad: int
+    id_usuario: int
+    motivo: str
+
