@@ -1,4 +1,4 @@
-from src.schemas.item_schema import ItemCreate
+from src.schemas.item_schema import ItemCreate, ItemTranferir
 from src.service import item_service
 
 def get_all():
@@ -29,12 +29,8 @@ def update(id_item, data):
     )
     return {"message": "Item actualizado correctamente"}
 
-def update_location(id_item, data):
-    item_service.update_location(
-        id_item,
-        data["id_ubicacion"]
-    )
-    return {"message": "Item actualizado correctamente"}
+def update_location(data: ItemTranferir):
+    return item_service.update_location(data)
 
 def delete(id_item):
     item_service.delete_item(id_item)

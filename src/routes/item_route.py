@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.schemas.item_schema import ItemCreate
+from src.schemas.item_schema import ItemCreate, ItemTranferir
 from src.controllers import item_controller
 
 router = APIRouter(prefix="/items")
@@ -24,16 +24,16 @@ def get_one(id_item: int):
 @router.post("/")
 def create(data: ItemCreate):
     return item_controller.create(data)
-
-@router.put("/{id_item}")
-def update(id_item: int, data: dict):
-    return item_controller.update(id_item, data)
-
 @router.delete("/{id_item}")
 def delete(id_item: int):
     return item_controller.delete(id_item)
 
 
-@router.put("/change-location/{id}")
-def change_location(id: int, data: dict):
-    return item_controller.update_location(id, data)
+@router.put("/change-location")
+def change_location(data: ItemTranferir):
+    return item_controller.update_location(data)
+
+@router.put("/{id_item}")
+def update(id_item: int, data: dict):
+    return item_controller.update(id_item, data)
+

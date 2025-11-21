@@ -26,3 +26,15 @@ class ItemResponse(ItemBase):
 
     class Config:
         orm_mode = True
+
+class ItemTranferir(BaseModel):
+    id_lote: int = Field(..., description="ID del lote que será transferido")
+    id_ubicacion_origen: int = Field(..., description="Ubicación de origen del stock")
+    id_ubicacion_destino: int = Field(..., description="Ubicación destino del stock")
+    cantidad: int = Field(..., ge=1, description="Cantidad a transferir (debe ser > 0)")
+    id_usuario: int = Field(..., description="ID del usuario que realiza la transferencia")
+    motivo: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Motivo de la transferencia (opcional)"
+    )

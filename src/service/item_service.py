@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, cast
 
 import mysql
-from src.schemas.item_schema import ItemResponse
+from src.schemas.item_schema import ItemResponse, ItemTranferir
 from src.models.item_model import Item
 from src.config.database import get_connection
 
@@ -79,31 +79,42 @@ def delete_item(id_item: int):
     cursor.close()
     conn.close()
 
-
-def update_location(id_item: int, id_location: int) -> Optional[ItemResponse]:
-    current = get_item_by_id(id_item)
-    if current is None:
-        raise Exception("Item no encontrado")
-
+def update_location(data: ItemTranferir):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    params: tuple[Any, ...] = (
-        id_item,
-        id_location,
-        current.codigo,
-        current.descripcion,
-        current.tipo_item,
-        current.unidad_medida,
-        current.stock_minimo,
-    )
+    try:
+        cursor.callproc(
+            "sp_transferir_stock",
+            [
+                data.id_lote,
+                data.id_ubicacion_origen,
+                data.id_ubicacion_destino,
+                data.cantidad,
+                data.id_usuario,
+                data.motivo
+            ]
+        )
 
-    cursor.execute("CALL sp_actualizar_items(%s, %s, %s, %s, %s, %s, %s)", params)
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
+        result = None
+        for res in cursor.stored_results():
+            result = res.fetchall()
 
-    return ItemResponse(**cast(Dict[str, Any], result)) if result else None
+        conn.commit()
+
+        return {
+            "status": "success",
+            "message": "Stock transferido correctamente",
+            "result": result
+        }
+
+    except mysql.connector.Error as err:  # type: ignore
+        conn.rollback()
+        raise Exception(str(err))
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 
