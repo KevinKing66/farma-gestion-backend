@@ -9,7 +9,6 @@ PORT = 3306
 DATABASE_URL = f"mysql+mysqlconnector://{USER}:{PASSWORD}@localhost:{PORT}/{DB_NAME}"
 
 
-import mysql.connector
 
 def get_connection():
     connection = mysql.connector.connect(
