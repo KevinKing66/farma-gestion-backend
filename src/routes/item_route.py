@@ -24,6 +24,7 @@ def get_one(id_item: int):
 @router.post("/")
 def create(data: ItemCreate):
     return item_controller.create(data)
+
 @router.delete("/{id_item}")
 def delete(id_item: int):
     return item_controller.delete(id_item)

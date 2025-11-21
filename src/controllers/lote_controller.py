@@ -1,11 +1,18 @@
+from fastapi import HTTPException
 from src.schemas.lote_schema import LoteCreate, LoteUpdate
 from src.service import lote_service
+from src.schemas.detalle_lote_schema import DetalleLoteResponseSchema
+from src.schemas.exportar_inventario_schema import ExportarInventarioResponseSchema
+
 
 def get_all():
     return lote_service.get_all_lotes()
 
 def get_all_by_lote():
     return lote_service.get_all_lotes()
+
+def find_all_with_pagination(filter, page, elementPerPages):
+    return lote_service.find_all_with_pagination(filter, page, elementPerPages)
 
 def get_one(id_lote):
     return lote_service.get_lote_by_id(id_lote)
