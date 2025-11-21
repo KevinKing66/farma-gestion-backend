@@ -13,9 +13,7 @@ from src.routes import (
 
 app = FastAPI(title="Farma Gestión Backend")
 
-# ----------------------------------------------------------
-# 🔥 HABILITAR CORS AQUÍ (RECIÉN DESPUÉS DE CREAR LA APP)
-# ----------------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -26,9 +24,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ----------------------------------------------------------
 
-# Tus routers
 app.include_router(auditoria_route.router)
 app.include_router(comprobante_route.router)
 app.include_router(existencia_route.router)
