@@ -139,3 +139,25 @@ def find_all_with_pagination(filter_value, page, limit):
     except Exception as e:
         print("Error in paciente_service.find_all_with_pagination:", e)
         raise Exception("Error al buscar pacientes con paginacion")
+
+
+def get_lote_posicion_by_id(id_pos: int):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.callproc("sp_obtener_lote_posicion", [id_pos])
+
+        data = []
+        for result in cursor.stored_results():
+            data = result.fetchall()  # normalmente solo habrá un registro
+
+        cursor.close()
+        conn.close()
+
+        if data:
+            return data[0]  # retornamos el primer (y único) registro
+        return None
+
+    except Exception as e:
+        print(f"Error en get_lote_posicion_by_id: {e}")
+        raise Exception("Error al obtener la posición del lote")

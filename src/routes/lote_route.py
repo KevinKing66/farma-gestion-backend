@@ -34,3 +34,7 @@ def delete(id_lote: int):
 @router.put("/change-location")
 def change_location(data: ItemTranferir):
     return lote_controller.update_location(data)
+
+@router.get("/posicion/{id_pos}")
+def get_lote_posicion(id_pos: int):
+    return lote_controller.get_lote_posicion(id_pos)

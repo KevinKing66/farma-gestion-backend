@@ -30,3 +30,13 @@ def update(id, data: LoteUpdate):
 def delete(id_lote):
     lote_service.delete_lote(id_lote)
     return {"message": "Lote eliminado correctamente"}
+
+
+from fastapi import HTTPException
+from src.schemas.lote_schema import LotePosicionResponse
+from src.service import lote_service
+def get_lote_posicion(id_pos: int):
+    registro = lote_service.get_lote_posicion_by_id(id_pos)
+    if not registro:
+        raise HTTPException(status_code=404, detail="Posición de lote no encontrada")
+    return LotePosicionResponse(**registro)

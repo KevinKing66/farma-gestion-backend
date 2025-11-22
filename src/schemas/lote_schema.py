@@ -33,3 +33,17 @@ class LoteResponse(LoteBase):
 
     class Config:
         orm_mode = True
+
+
+class LotePosicionBase(BaseModel):
+    id_lote: int
+    almacen: str = Field(..., max_length=50)
+    estante: str = Field(..., max_length=50)
+    nivel: Optional[str] = Field(None, max_length=20)
+    pasillo: Optional[str] = Field(None, max_length=20)
+
+class LotePosicionResponse(LotePosicionBase):
+    id_posicion: int
+
+    class Config:
+        orm_mode = True
