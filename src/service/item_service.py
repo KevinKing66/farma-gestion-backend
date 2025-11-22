@@ -45,10 +45,10 @@ def create_item(id_ubicacion: int, codigo: str, descripcion: str, tipo_item: str
 
         result = None
         for res in cursor.stored_results():
-            result = res.fetchone()  # obtiene {"id_lote": valor}
+            result = res.fetchone()
 
         conn.commit()
-        return result  # puedes retornar el id del lote si lo necesitas
+        return result 
 
     except mysql.connector.Error as err: # type: ignore
         conn.rollback()

@@ -1,8 +1,9 @@
 from fastapi import HTTPException
-from src.schemas.lote_schema import LoteCreate, LoteUpdate
+from src.schemas.lote_schema import LoteCreate, LoteUpdate,LotePosicionResponse
+from src.schemas.item_schema import ItemTranferir
 from src.service import lote_service
 from src.schemas.exportar_inventario_schema import ExportarInventarioResponseSchema
-
+from src.service import lote_service
 
 def get_all():
     return lote_service.get_all_lotes()
@@ -31,10 +32,10 @@ def delete(id_lote):
     lote_service.delete_lote(id_lote)
     return {"message": "Lote eliminado correctamente"}
 
+def update_location(data: ItemTranferir):
+    return lote_service.update_location(data)
 
-from fastapi import HTTPException
-from src.schemas.lote_schema import LotePosicionResponse
-from src.service import lote_service
+
 def get_lote_posicion(id_pos: int):
     registro = lote_service.get_lote_posicion_by_id(id_pos)
     if not registro:
