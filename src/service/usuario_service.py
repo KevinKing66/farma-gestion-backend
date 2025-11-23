@@ -55,7 +55,7 @@ def get_usuario_by_id(id_usuario):
 def get_usuario_by_email(email: str) -> Usuario | None:
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM usuarios WHERE correo = %s LIMIT 1", (email,))
+    cursor.execute("SELECT * FROM usuarios WHERE correo = %s AND activo = 1 LIMIT 1", (email,))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
