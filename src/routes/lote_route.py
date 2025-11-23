@@ -10,8 +10,8 @@ def get_all():
     return lote_controller.get_all()
 
 @router.get("/filtro")
-def find_all_with_pagination(keyboard: str | None = "", page: int = 1, elementsPerPages: int = 10):
-    return lote_controller.find_all_with_pagination(filter=keyboard, page=page, elementPerPages=elementsPerPages)
+def find_all_with_pagination(keyword: str | None = "", page: int = 1, elementsPerPages: int = 10):
+    return lote_controller.find_all_with_pagination(filter=keyword, page=page, elementPerPages=elementsPerPages)
 
 
 @router.get("/id/{id_lote}")
