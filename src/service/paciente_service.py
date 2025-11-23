@@ -110,6 +110,21 @@ def updateLastAttentionDate(id_paciente):
         print("Error in paciente_service.update:", e)
         raise Exception("Error al actualizar el paciente")
 
+def updateLastAttentionDateCtx(id_paciente, id_usuario):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.callproc("sp_actualizar_ultima_atencion", [id_paciente, id_usuario])
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+        return {"message": "Paciente actualizado"}
+
+    except Exception as e:
+        print("Error in paciente_service.update:", e)
+        raise Exception("Error al actualizar el paciente")
+
 
 def delete(id_paciente):
     try:

@@ -25,6 +25,9 @@ def update(id_paciente: int, data: PatientUpdate):
 def update_last_attention_date(id_paciente):
     return paciente_service.updateLastAttentionDate(id_paciente)
 
+def update_last_attention_date_ctx(id_paciente, id_usuario):
+    return paciente_service.updateLastAttentionDateCtx(id_paciente, id_usuario)
+
 
 def delete(id_paciente):
     return paciente_service.delete(id_paciente)
