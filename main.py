@@ -7,7 +7,7 @@ from src.routes import (
     proveedor_route, usuario_route, ubicacion_route, movimiento_route,
     notificacion_route, parametro_route, staging_inventario_inicial_route,
     backup_route, control_calidad_route, incidente_route, ip_route, token_route,
-    dashboard_router, inventario_route, paciente_route
+    dashboard_router, inventario_route, paciente_route, orden_route
 )
 # from src.routes import lote_route, item_route, auditoria_route, comprobante_route, existencia_route, proveedor_route, usuario_route, ubicacion_route, movimiento_route, notificacion_route, parametro_route, staging_inventario_inicial_route, backup_route, control_calidad_route, incidente_route, ip_route, token_route, dashboard_router, inventario_route 
 
@@ -47,3 +47,4 @@ app.include_router(dashboard_router.router)
 app.include_router(inventario_route.router)
 
 app.include_router(paciente_route.router)
+app.include_router(orden_route.router)
