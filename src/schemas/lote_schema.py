@@ -69,3 +69,12 @@ class SalidaSchema(BaseModel):
     cantidad: int
     id_usuario: int
     motivo: str
+
+
+class AssignLotLocation(BaseModel):
+    id_lote: int
+    id_ubicacion: int
+    estante: Optional[str] = None
+    nivel: Optional[str] = None
+    pasillo: Optional[str] = None
+    id_usuario: int

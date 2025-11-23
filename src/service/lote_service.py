@@ -236,3 +236,31 @@ def transferir_stock(data: ItemTranferir):
         connection.close()
         
         
+
+def assign_location_ctx(id_lote, id_ubicacion, estante, nivel, pasillo, id_usuario):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.callproc("sp_asignar_ubicacion_lote_ctx", [
+            id_lote,
+            id_ubicacion,
+            estante,
+            nivel,
+            pasillo,
+            id_usuario
+        ])
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        return {
+            "message": "Ubicación asignada correctamente",
+            "id_lote": id_lote,
+            "id_ubicacion": id_ubicacion
+        }
+
+    except Exception as e:
+        print("Error in lote_service.assign_location_ctx:", e)
+        raise Exception("Error al asignar ubicación al lote")

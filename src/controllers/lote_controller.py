@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from src.schemas.lote_schema import LoteCreate, LoteUpdate, LotePosicionResponse, SalidaSchema
+from src.schemas.lote_schema import AssignLotLocation, LoteCreate, LoteUpdate, LotePosicionResponse, SalidaSchema
 from src.schemas.item_schema import ItemTranferir
 from src.service import lote_service
 
@@ -32,6 +32,16 @@ def delete(id_lote):
 
 def update_location(data: ItemTranferir):
     return lote_service.update_location(data)
+
+def assign_location(data: AssignLotLocation):
+    return lote_service.assign_location_ctx(
+            data.id_lote,
+            data.id_ubicacion,
+            data.estante,
+            data.nivel,
+            data.pasillo,
+            data.id_usuario
+            )
 
 
 def get_lote_posicion(id_pos: int):
