@@ -15,7 +15,8 @@ def create(data: PatientCreate):
         data.tipo_documento,
         data.documento,
         data.nombre_completo,
-        data.fecha_ingreso
+        data.fecha_ingreso,
+        data.id_usuario
     )
 
 def update(id_paciente: int, data: PatientUpdate):
@@ -27,6 +28,9 @@ def update_last_attention_date(id_paciente):
 
 def delete(id_paciente):
     return paciente_service.delete(id_paciente)
+
+def delete_ctx(id_paciente, id_usuario):
+    return paciente_service.delete_ctx(id_paciente, id_usuario)
 
 
 def find_by_id(id_paciente):

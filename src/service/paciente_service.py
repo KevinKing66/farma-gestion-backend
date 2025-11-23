@@ -1,5 +1,7 @@
 from src.config.database import get_connection
 from src.models.paciente_model import Paciente
+from src.schemas.paciente_schema import PatientCreate, PatientUpdate
+
 
 
 def get_all():
@@ -42,12 +44,12 @@ def find_all_with_pagination(filter_value, page, limit):
         raise Exception("Error al buscar pacientes con paginacion")
 
 
-def create(tipo_documento, documento, nombre_completo, fecha_ingreso):
+def create(tipo_documento, documento, nombre_completo, fecha_ingreso, id_usuario):
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.callproc("sp_crear_paciente", [
-            tipo_documento, documento, nombre_completo, fecha_ingreso
+        cursor.callproc("sp_crear_paciente_ctx", [
+            tipo_documento, documento, nombre_completo, fecha_ingreso, id_usuario
         ])
 
         new_id = None
@@ -64,7 +66,7 @@ def create(tipo_documento, documento, nombre_completo, fecha_ingreso):
         print("Error in paciente_service.create:", e)
         raise Exception("Error al crear paciente")
 
-def update(id, data: Paciente):
+def update(id, data: PatientUpdate):
     
     try:
         connection = get_connection()
@@ -114,6 +116,23 @@ def delete(id_paciente):
         connection = get_connection()
         cursor = connection.cursor()
         cursor.callproc("sp_eliminar_paciente", [id_paciente])
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+        return {"message": "Paciente eliminado"}
+
+    except Exception as e:
+        print("Error in paciente_service.delete:", e)
+        raise Exception("Error eliminando paciente")
+
+
+
+def delete_ctx(id_paciente, id_usuario):
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.callproc("sp_eliminar_paciente", [id_paciente, id_usuario])
         connection.commit()
 
         cursor.close()

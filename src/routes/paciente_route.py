@@ -37,6 +37,11 @@ def delete_route(id_paciente: int):
     return paciente_controller.delete(id_paciente)
 
 
+@router.delete("/")
+def delete_ctx_route(id_paciente: int, id_usuario):
+    return paciente_controller.delete_ctx(id_paciente, id_usuario)
+
+
 @router.get("/id/{id_paciente}")
 def get_one_route(id_paciente: int):
     return paciente_controller.find_by_id(id_paciente)

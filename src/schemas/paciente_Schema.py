@@ -13,6 +13,7 @@ class PatientCreate(BaseModel):
     documento: str
     nombre_completo: str
     fecha_ingreso: Optional[str] = None  # YYYY-MM-DD
+    id_usuario: int
 
 
 class PatientResponse(BaseModel):
