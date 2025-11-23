@@ -3161,6 +3161,34 @@ BEGIN
 END//
 DELIMITER ;
 
+DELIMITER //
+CREATE PROCEDURE sp_buscar_ordenes_v2(
+    IN p_filtro VARCHAR(100),
+    IN p_estado ENUM('PENDIENTE','PREPARACION','ENTREGADO','CANCELADO'),
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT;
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        o.id_orden AS ID,
+        p.nombre_completo AS paciente,
+        DATE_FORMAT(o.fecha_creacion, '%d/%m/%Y') AS fecha,
+        o.estado
+    FROM ordenes o
+    JOIN pacientes p ON p.id_paciente = o.id_paciente
+    WHERE 
+      p_filtro = '' 
+      OR  LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+       OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) 
+       OR o.estado = p_estado
+    ORDER BY o.fecha_creacion DESC
+    LIMIT p_limit OFFSET v_offset;
+END//
+DELIMITER ;
+
 
 DELIMITER //
 CREATE PROCEDURE sp_crear_orden(
