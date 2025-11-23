@@ -1,23 +1,16 @@
-from src.service.paciente_service import (
-    get_all,
-    find_all_with_pagination,
-    create,
-    update,
-    delete,
-    get_by_id
-)
+from src.service import paciente_service
 
 
 def find_all():
-    return get_all()
+    return paciente_service.get_all()
 
 
-def find_all_with_pagination(filter_value, page, limit):
-    return find_all_with_pagination(filter_value, page, limit)
+def find_all_with_pagination(filter, page, limit):
+    return paciente_service.find_all_with_pagination(filter, page, limit)
 
 
 def create(data):
-    return create(
+    return paciente_service.create(
         data.tipo_documento,
         data.documento,
         data.nombre_completo,
@@ -25,13 +18,13 @@ def create(data):
     )
 
 
-def update(id_paciente):
-    return update(id_paciente)
+def update_last_attention_date(id_paciente):
+    return paciente_service.updateLastAttentionDate(id_paciente)
 
 
 def delete(id_paciente):
-    return delete(id_paciente)
+    return paciente_service.delete(id_paciente)
 
 
 def find_by_id(id_paciente):
-    return get_by_id(id_paciente)
+    return paciente_service.get_by_id(id_paciente)

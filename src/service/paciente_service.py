@@ -65,7 +65,7 @@ def create(tipo_documento, documento, nombre_completo, fecha_ingreso):
         raise Exception("Error al crear paciente")
 
 
-def update(id_paciente):
+def updateLastAttentionDate(id_paciente):
     try:
         connection = get_connection()
         cursor = connection.cursor()
