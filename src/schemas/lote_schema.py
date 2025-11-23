@@ -47,3 +47,25 @@ class LotePosicionResponse(LotePosicionBase):
 
     class Config:
         orm_mode = True
+        
+        
+
+class IngresoSchema(BaseModel):
+    id_item: int
+    id_proveedor: int
+    codigo_lote: str
+    fecha_venc: date
+    costo_unitario: float
+    id_ubicacion_destino: int
+    cantidad: int
+    id_usuario: int
+    motivo: str | None = None
+    
+    
+class SalidaSchema(BaseModel):
+    id_lote: int
+    id_ubicacion_origen: int
+    id_ubicacion_destino: int
+    cantidad: int
+    id_usuario: int
+    motivo: str

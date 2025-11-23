@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from src.schemas.item_schema import ItemTranferir
-from src.schemas.lote_schema import LoteCreate, LoteUpdate
+from src.schemas.lote_schema import LoteCreate, LoteUpdate, IngresoSchema, SalidaSchema
 from src.controllers import lote_controller
 
 router = APIRouter(prefix="/lotes")
@@ -38,3 +38,19 @@ def change_location(data: ItemTranferir):
 @router.get("/posicion/{id_pos}")
 def get_lote_posicion(id_pos: int):
     return lote_controller.get_lote_posicion(id_pos)
+
+@router.post("/registrar-ingreso")
+def registrar_ingreso(data: IngresoSchema):
+    return lote_controller.registrar_ingreso(data)
+
+@router.post("/transferir")
+def transferir_stock(data: ItemTranferir):
+    return lote_controller.transferir_stock(data)
+
+@router.post("/ingreso")
+def registrar_ingreso(data: IngresoSchema):
+    return lote_controller.registrar_ingreso(data)
+
+@router.post("/salida")
+def registrar_salida(data: SalidaSchema):
+    return lote_controller.registrar_salida(data)

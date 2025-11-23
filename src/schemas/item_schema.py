@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
+from datetime import date
 
 class ItemBase(BaseModel):
     id_ubicacion: int

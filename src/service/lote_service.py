@@ -2,7 +2,7 @@ import mysql
 
 from src.schemas.item_schema import ItemTranferir
 from src.config.database import get_connection
-from src.schemas.lote_schema import LoteCreate, LoteUpdate
+from src.schemas.lote_schema import LoteCreate, LoteUpdate, IngresoSchema, SalidaSchema
 
 def get_all_lotes():
     conn = get_connection()
@@ -161,3 +161,78 @@ def get_lote_posicion_by_id(id_pos: int):
     except Exception as e:
         print(f"Error en get_lote_posicion_by_id: {e}")
         raise Exception("Error al obtener la posición del lote")
+
+
+def registrar_ingreso(data: IngresoSchema):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.callproc("sp_registrar_ingreso", [
+            data.id_item,
+            data.id_proveedor,
+            data.codigo_lote,
+            data.fecha_venc,
+            data.costo_unitario,
+            data.id_ubicacion_destino,
+            data.cantidad,
+            data.id_usuario,
+            data.motivo
+        ])
+
+        conn.commit()
+        return {"message": "Ingreso registrado correctamente"}
+
+    except Exception as e:
+        conn.rollback()
+        raise e
+
+    finally:
+        cursor.close()
+        conn.close()
+        
+
+def registrar_salida(data: SalidaSchema):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.callproc("sp_registrar_salida", [
+        data.id_lote,
+        data.id_ubicacion_origen,
+        data.id_ubicacion_destino,
+        data.cantidad,
+        data.id_usuario,
+        data.motivo
+    ])
+    conn.commit()
+    cursor.close()
+    conn.close()
+    {"message": "Salida registrada correctamente"}
+
+
+def transferir_stock(data: ItemTranferir):
+
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.callproc(
+                "sp_transferir_stock",
+                [
+                    data.id_lote,
+                    data.id_ubicacion_origen,
+                    data.id_ubicacion_destino,
+                    data.cantidad,
+                    data.id_usuario,
+                    data.motivo
+                ]
+            )
+        connection.commit()
+        return {"message": "Transferencia realizada correctamente"}
+
+    except Exception as e:
+        connection.rollback()
+        raise e
+
+    finally:
+        connection.close()
+        
+        

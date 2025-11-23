@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from src.service import inventario_service
 def find_all():
     try:

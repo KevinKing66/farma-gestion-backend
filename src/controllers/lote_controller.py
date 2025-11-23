@@ -1,8 +1,6 @@
 from fastapi import HTTPException
-from src.schemas.lote_schema import LoteCreate, LoteUpdate,LotePosicionResponse
+from src.schemas.lote_schema import LoteCreate, LoteUpdate, LotePosicionResponse, SalidaSchema
 from src.schemas.item_schema import ItemTranferir
-from src.service import lote_service
-from src.schemas.exportar_inventario_schema import ExportarInventarioResponseSchema
 from src.service import lote_service
 
 def get_all():
@@ -41,3 +39,14 @@ def get_lote_posicion(id_pos: int):
     if not registro:
         raise HTTPException(status_code=404, detail="Posición de lote no encontrada")
     return LotePosicionResponse(**registro)
+
+def registrar_ingreso(data):
+    return lote_service.registrar_ingreso(data)
+
+
+def registrar_salida(data: SalidaSchema):
+    return lote_service.registrar_salida(data)
+    
+
+def transferir_stock(data):
+    return lote_service.transferir_stock(data)
