@@ -1,6 +1,6 @@
 from src.config.database import get_connection
 from src.models.paciente_model import Paciente
-from src.schemas.paciente_schema import PatientCreate, PatientUpdate
+from src.schemas.paciente_schema import PatientUpdate
 
 
 

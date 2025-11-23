@@ -1,4 +1,5 @@
 from src.config.database import get_connection
+
 def find_all_inventario():
     try:
         connection = get_connection()
@@ -59,6 +60,38 @@ def exportar_inventario():
                 results.append(dict(zip(cols, row)))
 
         return results
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def stockAdjust(
+        id_lote,
+        id_ubicacion,
+        cantidad,
+        sentido,
+        id_usuario,
+        motivo
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.callproc("sp_ajustar_stock_ctx", [
+            id_lote,
+            id_ubicacion,
+            cantidad,
+            sentido,
+            id_usuario,
+            motivo
+        ])
+
+        conn.commit()
+        return {"message": "Stock ajustado correctamente"}
+
+    except Exception as e:
+        print("Error en stock_service.ajustar_stock:", e)
+        raise Exception("Error al ajustar stock")
 
     finally:
         cursor.close()

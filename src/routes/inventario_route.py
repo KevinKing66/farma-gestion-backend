@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from src.controllers import inventario_controller
+from src.schemas.inventario_schema import StockAdjust
 
 router = APIRouter(prefix="/inventario")
 
@@ -14,3 +15,8 @@ def find_all_with_pagination(keyboard: str | None = "", page: int = 1, elementsP
 @router.get("/exportar")
 def exportar_inventario():
     return inventario_controller.exportar_inventario()
+
+
+@router.post("/stock_adjust")
+def stock_adjust(data: StockAdjust):
+    return inventario_controller.stock_adjust(data)

@@ -25,3 +25,11 @@ class InventarioFiltro(BaseModel):
     page: int = 1
     limit: int = 10
 
+
+class StockAdjust(BaseModel):
+    id_lote: int
+    id_ubicacion: int
+    cantidad: int
+    sentido: str          # 'AUMENTO' | 'DISMINUCION'
+    id_usuario: int
+    motivo: Optional[str] = None

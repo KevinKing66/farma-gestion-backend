@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from src.service import inventario_service
+from src.schemas.inventario_schema import StockAdjust
 def find_all():
     try:
         return inventario_service.find_all_inventario()
@@ -19,7 +20,12 @@ def find_all_medicamento_by_keyword_and_pagination(filter: str, pages: int = 0, 
     except Exception as e:
         return {"error": str(e)}
 
-
+def stock_adjust(data: StockAdjust):
+    try:
+        return inventario_service.stockAdjust(data)
+    except Exception as e:
+        return {"error": str(e)}
+    
 
 def exportar_inventario():
     try:
