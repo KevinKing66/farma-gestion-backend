@@ -5,11 +5,15 @@ router = APIRouter(prefix="/comprobantes")
 
 @router.get("/")
 def get_all():
-    return comprobante_controller.get_all()
+    return comprobante_controller.find_all()
+
+@router.get("/proveedor/{proveedor}")
+def find_all_by_proveedor(proveedor: int):
+    return comprobante_controller.find_all_by_proveedor(proveedor)
 
 @router.get("/{id_comprobante}")
 def get_one(id_comprobante: int):
-    return comprobante_controller.get_one(id_comprobante)
+    return comprobante_controller.find_one(id_comprobante)
 
 @router.post("/")
 def create(data: dict):

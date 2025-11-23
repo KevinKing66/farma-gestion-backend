@@ -1,10 +1,13 @@
 from src.service import comprobante_service
 
-def get_all():
+def find_all():
     return comprobante_service.get_all()
 
-def get_one(id_comprobante):
+def find_one(id_comprobante):
     return comprobante_service.get_by_id(id_comprobante)
+
+def find_all_by_proveedor(id_comprobante):
+    return comprobante_service.find_all_by_proveedor(id_comprobante)
 
 def create(data):
     comprobante_service.create_comprobante(

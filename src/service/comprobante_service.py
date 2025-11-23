@@ -29,6 +29,28 @@ def get_by_id(id_comprobante):
     return result
 
 
+def find_all_by_proveedor(id_proveedor: int):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.callproc("sp_listar_comprobantes_recepcion", [id_proveedor])
+
+        comprobantes = []
+        for result in cursor.stored_results():
+            comprobantes = result.fetchall()
+
+        return comprobantes
+
+    except Exception as e:
+        print("Error en comprobante_service.find_all_by_proveedor:", e)
+        raise Exception("Error al obtener comprobantes del proveedor")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def create_comprobante(id_movimiento, id_proveedor, canal):
     """
     Crea un nuevo comprobante de recepción directamente en la tabla comprobantes_recepcion.
