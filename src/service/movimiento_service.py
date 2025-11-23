@@ -48,10 +48,19 @@ def insert_movimiento(
 def get_by_lote(id_lote):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT * FROM movimientos_v2 WHERE id_lote = %s ORDER BY fecha DESC
-    """, (id_lote,))
-    result = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return result
+    try:
+        cursor.callproc("sp_listar_movimientos_por_lote", [id_lote])
+
+        movimientos = []
+        for result in cursor.stored_results():
+            movimientos = result.fetchall()
+
+        return movimientos
+
+    except Exception as e:
+        print("Error en movimiento_service.listar_movimientos_por_lote:", e)
+        raise Exception("Error al obtener movimientos por lote")
+
+    finally:
+        cursor.close()
+        conn.close()

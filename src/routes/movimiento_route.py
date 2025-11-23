@@ -14,7 +14,4 @@ def get_all():
 def get_by_lote(id_lote: int):
     return movimiento_controller.get_by_lote(id_lote)
 
-@router.post("/crear-lote")
-def crear_lote(data: LoteCreate):
-    return movimiento_controller.crear_lote(data)
 
