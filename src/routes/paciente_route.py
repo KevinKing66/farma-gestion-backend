@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from src.controllers import paciente_controller
-from src.schemas.paciente_model import PatientCreate, PatientUpdateLastCare
+from src.schemas.paciente_schema import PatientCreate, PatientUpdate
 
 router = APIRouter(prefix="/pacientes")
 
@@ -23,6 +23,9 @@ def find_all_with_pagination_route(
 def create_route(patient: PatientCreate):
     return paciente_controller.create(patient)
 
+@router.put("/update/{id_paciente}")
+def update(id_paciente: int, data: PatientUpdate):
+    return paciente_controller.update(id_paciente, data)
 
 @router.put("/update_last_attention_date/{id_paciente}")
 def update_last_attention_date(id_paciente: int):

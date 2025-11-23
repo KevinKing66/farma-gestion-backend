@@ -64,6 +64,34 @@ def create(tipo_documento, documento, nombre_completo, fecha_ingreso):
         print("Error in paciente_service.create:", e)
         raise Exception("Error al crear paciente")
 
+def update(id, data: Paciente):
+    
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.callproc("sp_actualizar_paciente_ctx", [
+            id,
+            data.tipo_documento,
+            data.documento,
+            data.nombre_completo,
+            data.fecha_ingreso,
+            data.id_usuario
+        ])
+
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+
+        return {
+            "message": "Paciente actualizado correctamente",
+            "id_paciente": id
+        }
+
+    except Exception as e:
+        print("Error in paciente_service.update_ctx:", e)
+        raise Exception("Error al actualizar el paciente")
 
 def updateLastAttentionDate(id_paciente):
     try:
