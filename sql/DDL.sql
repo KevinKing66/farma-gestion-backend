@@ -581,8 +581,27 @@ CREATE PROCEDURE sp_listar_con_paginacion_usuarios(
 )
 BEGIN
     DECLARE v_offset INT;
+    DECLARE v_total INT;
+    DECLARE v_total_pages INT;
+
+    -- Calcular offset
     SET v_offset = (p_page - 1) * p_limit;
 
+    -- Contar total de registros según el filtro
+    SELECT COUNT(*) INTO v_total
+    FROM usuarios u
+    WHERE 
+        (
+            p_filtro = '' 
+            OR LOWER(u.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+            OR LOWER(u.correo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+            OR LOWER(u.rol) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        );
+
+    -- Calcular total de páginas
+    SET v_total_pages = CEIL(v_total / p_limit);
+
+    -- Retornar datos paginados
     SELECT 
         u.id_usuario,
         u.nombre_completo,
@@ -601,6 +620,12 @@ BEGIN
         )
     ORDER BY u.nombre_completo ASC
     LIMIT p_limit OFFSET v_offset;
+
+    SELECT 
+        v_total AS total_registros,
+        v_total_pages AS total_paginas,
+        p_page AS pagina_actual,
+        p_limit AS limite;
 END//
 DELIMITER ;
 
@@ -3134,7 +3159,6 @@ BEGIN
 END//
 DELIMITER ;
 
-
 DELIMITER //
 CREATE PROCEDURE sp_buscar_ordenes(
     IN p_filtro VARCHAR(100),
@@ -3145,6 +3169,7 @@ BEGIN
     DECLARE v_offset INT;
     SET v_offset = (p_page - 1) * p_limit;
 
+    -- datos
     SELECT 
         o.id_orden AS ID,
         p.nombre_completo AS paciente,
@@ -3153,13 +3178,27 @@ BEGIN
     FROM ordenes o
     JOIN pacientes p ON p.id_paciente = o.id_paciente
     WHERE 
-      p_filtro = '' 
-      OR  LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) -- opcional si quieres buscar por ID
+        p_filtro = '' 
+        OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%'))
     ORDER BY o.fecha_creacion DESC
     LIMIT p_limit OFFSET v_offset;
+
+    -- metadata
+    SELECT 
+        COUNT(*) AS total_registros,
+        CEIL(COUNT(*) / p_limit) AS total_paginas,
+        p_page AS pagina_actual,
+        p_limit AS limite
+    FROM ordenes o
+    JOIN pacientes p ON p.id_paciente = o.id_paciente
+    WHERE 
+        p_filtro = '' 
+        OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%'));
 END//
 DELIMITER ;
+
 
 DELIMITER //
 CREATE PROCEDURE sp_buscar_ordenes_v2(
@@ -3180,12 +3219,23 @@ BEGIN
     FROM ordenes o
     JOIN pacientes p ON p.id_paciente = o.id_paciente
     WHERE 
-      p_filtro = '' 
-      OR  LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-       OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')) 
-       OR o.estado = p_estado
+        (p_filtro = '' OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+         OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')))
+        AND (p_estado IS NULL OR o.estado = p_estado)
     ORDER BY o.fecha_creacion DESC
     LIMIT p_limit OFFSET v_offset;
+
+    SELECT 
+        COUNT(*) AS total_registros,
+        CEIL(COUNT(*) / p_limit) AS total_paginas,
+        p_page AS pagina_actual,
+        p_limit AS limite
+    FROM ordenes o
+    JOIN pacientes p ON p.id_paciente = o.id_paciente
+    WHERE 
+        (p_filtro = '' OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+         OR LOWER(o.id_orden) LIKE LOWER(CONCAT('%', p_filtro, '%')))
+        AND (p_estado IS NULL OR o.estado = p_estado);
 END//
 DELIMITER ;
 
