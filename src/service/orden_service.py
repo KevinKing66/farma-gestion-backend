@@ -46,6 +46,9 @@ def crear_orden(orden: OrdenCreate):
 
         for result in cursor.stored_results():
             return result.fetchone()
+    except Exception as e:
+        print("Error en orden_Service: ", e)
+        raise Exception(f"Error: {e}")
 
     finally:
         cursor.close()
@@ -64,6 +67,9 @@ def add_details(id_orden: int, detalle: OrdenDetalleCreate):
         ])
         conn.commit()
         return {"message": "Detalle agregado"}
+    except Exception as e:
+        print("Error en orden_Service: ", e)
+        raise Exception(f"Error: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -80,6 +86,9 @@ def update_estado(id_orden: int, estado: str, id_usuario: int):
         ])
         conn.commit()
         return {"message": "Estado actualizado"}
+    except Exception as e:
+        print("Error en orden_Service: ", e)
+        raise Exception(f"Error: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -92,6 +101,9 @@ def find_detail(id_orden: int):
         cursor.callproc("sp_obtener_detalle_orden", [id_orden])
         for result in cursor.stored_results():
             return result.fetchall()
+    except Exception as e:
+        print("Error en orden_Service: ", e)
+        raise Exception(f"Error: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -110,6 +122,9 @@ def update_details(detalle: OrdenDetalleUpdate):
         ])
         conn.commit()
         return {"message": "Detalle actualizado"}
+    except Exception as e:
+        print("Error en orden_Service: ", e)
+        raise Exception(f"Error: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -125,6 +140,9 @@ def delete(id_orden: int, id_usuario: int):
         ])
         conn.commit()
         return {"message": "Orden eliminada"}
+    except Exception as e:
+        print("Error en orden_Service: ", e)
+        raise Exception(f"Error: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -142,5 +160,5 @@ def updateLastAttentionDate(id_paciente):
         return {"message": "Paciente actualizado"}
 
     except Exception as e:
-        print("Error in paciente_service.update:", e)
+        print("Error in orden_service.update:", e)
         raise Exception("Error al actualizar el paciente")
