@@ -22,7 +22,7 @@ def get_one(id_lote: int):
 def create(data: LoteCreate):
     return lote_controller.create(data)
 
-@router.put("/{id_lote}")
+@router.put("/update/{id_lote}")
 def update(id_lote: int, data: LoteUpdate):
     return lote_controller.update(id_lote, data)
 
