@@ -33,10 +33,8 @@ def find_all_with_pagination(keyword: str, page: int = 1, limit: int = 10):
 
         result_sets = list(cursor.stored_results())
 
-        # Primer resultset → lista de pacientes
         pacientes = result_sets[0].fetchall()
 
-        # Segundo resultset → metadata
         metadata = result_sets[1].fetchall()[0]
 
         cursor.close()
