@@ -11,18 +11,18 @@ router = APIRouter(prefix="/ordenes", tags=["Ordenes"])
 
 
 @router.get("/")
-def get_all(filtro: str = "", page: int = 1, limit: int = 10):
-    return orden_controller.find_all(filtro, page, limit)
+def get_all(keyword: str = "", page: int = 1, limit: int = 10):
+    return orden_controller.find_all(keyword, page, limit)
 
 
 @router.get("/v2")
 def get_all_v2(
-    filtro: str = "",
+    keyword: str = "",
     estado: str = "PENDIENTE",
     page: int = 1,
     limit: int = 10
 ):
-    return orden_controller.find_all_v2(filtro, estado, page, limit)
+    return orden_controller.find_all_v2(keyword, estado, page, limit)
 
 
 @router.post("/")

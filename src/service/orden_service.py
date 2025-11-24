@@ -6,16 +6,28 @@ def find_all_with_pagination(keyword: str, page: int, limit: int):
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
+
         cursor.callproc("sp_buscar_ordenes", [keyword, page, limit])
 
-        for result in cursor.stored_results():
-            return result.fetchall()
+        result_sets = list(cursor.stored_results())
+
+        ordenes = result_sets[0].fetchall()
+
+        metadata = result_sets[1].fetchall()[0]
+
+        return {
+            "data": ordenes,
+            "metadata": metadata
+        }
 
     except Exception as e:
+        print(f"Error en sp_buscar_ordenes: {e}")
         raise e
+
     finally:
         cursor.close()
         conn.close()
+
 
 
 def find_all_with_pagination_v2(keyword: str, status: str, page: int, limit: int):
