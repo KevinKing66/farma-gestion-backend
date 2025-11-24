@@ -3458,19 +3458,30 @@ BEGIN
     DECLARE v_offset INT;
     SET v_offset = (p_page - 1) * p_limit;
 
-    SELECT 
+    SELECT
         p.id_paciente,
         p.nombre_completo AS nombre,
         p.documento AS identificacion,
         DATE_FORMAT(p.fecha_ingreso, '%d/%m/%Y') AS fecha_ingreso,
         DATE_FORMAT(p.ultima_atencion, '%d/%m/%Y') AS ultima_atencion
     FROM pacientes p
-    WHERE 
-      p_filtro = ''
-      OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-      OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+    WHERE
+        p_filtro = ''
+        OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'))
     ORDER BY p.nombre_completo ASC
     LIMIT p_limit OFFSET v_offset;
+
+    SELECT
+        COUNT(*) AS total,
+        p_page AS pagina_actual,
+        p_limit AS limite,
+        CEIL(COUNT(*) / p_limit) AS total_paginas
+    FROM pacientes p
+    WHERE
+        p_filtro = ''
+        OR LOWER(p.nombre_completo) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+        OR LOWER(p.documento) LIKE LOWER(CONCAT('%', p_filtro, '%'));
 END//
 DELIMITER ;
 

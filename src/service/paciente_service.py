@@ -24,24 +24,33 @@ def get_all():
         raise Exception("Error buscando todos los pacientes")
 
 
-def find_all_with_pagination(filter_value, page, limit):
+def find_all_with_pagination(keyword: str, page: int = 1, limit: int = 10):
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.callproc("sp_buscar_paciente", [filter_value, page, limit])
 
-        data = []
-        for result in cursor.stored_results():
-            data = result.fetchall()
+        cursor.callproc("sp_buscar_paciente", [keyword, page, limit])
+
+        result_sets = list(cursor.stored_results())
+
+        # Primer resultset → lista de pacientes
+        pacientes = result_sets[0].fetchall()
+
+        # Segundo resultset → metadata
+        metadata = result_sets[1].fetchall()[0]
 
         cursor.close()
         connection.close()
 
-        return [Paciente.from_db_row(row).to_dict() for row in data]
+        return {
+            "data": [Paciente.from_db_row(row).to_dict() for row in pacientes],
+            "metadata": metadata
+        }
 
     except Exception as e:
-        print("Error in paciente_service.find_all_with_pagination:", e)
-        raise Exception("Error al buscar pacientes con paginacion")
+        print("Error en find_all_by_keyword_and_pagination:", e)
+        raise Exception(f"Error al buscar pacientes: \n {e}")
+
 
 
 def create(tipo_documento, documento, nombre_completo, fecha_ingreso, id_usuario):
