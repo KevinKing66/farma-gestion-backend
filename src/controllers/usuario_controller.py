@@ -6,9 +6,9 @@ def find_all():
     return usuario_service.find_all()
 
 
-def find_all_by_keyword_and_pagination(filter: str = "", pages: int = 1, elementPerPages: int = 10):
+def find_all_by_keyword_and_pagination(keyword: str = "", page: int = 1, elementPerPages: int = 10):
     try:
-        return usuario_service.find_all_by_keyword_and_pagination(filter=filter, pages=pages, elementPerPages=elementPerPages)
+        return usuario_service.find_all_by_keyword_and_pagination(keyword=keyword, page=page, elementPerPages=elementPerPages)
     except Exception as e:
         return {"error": str(e)}
 

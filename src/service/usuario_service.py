@@ -28,20 +28,30 @@ def find_all():
     conn.close()
     return [UsuarioResponse(**user) for user in result] # type: ignore
 
-def find_all_by_keyword_and_pagination(filter: str, pages: int = 0, elementPerPages: int = 10):
+def find_all_by_keyword_and_pagination(keyword: str, page: int = 1, elementPerPages: int = 10):
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.callproc('sp_listar_con_paginacion_usuarios', [filter, pages, elementPerPages])
-        data = []
-        for result in cursor.stored_results():
-            data = result.fetchall()
+
+        cursor.callproc('sp_listar_con_paginacion_usuarios', [keyword, page, elementPerPages])
+
+        result_sets = list(cursor.stored_results())
+
+        users = result_sets[0].fetchall()
+
+        metadata = result_sets[1].fetchall()[0]
+
         cursor.close()
         connection.close()
-        return [UsuarioResponse(**user) for user in data]
+
+        return {
+            "data": [UsuarioResponse(**user) for user in users],
+            "metadata": metadata
+        }
+        # return [UsuarioResponse(**user) for user in data]
     except Exception as e:
-        print(f"Error en sp_buscar_medicamento: {e}")
-        raise Exception("Error al buscar medicamentos en inventario")
+        print(f"Error en sp_listar_con_paginacion_usuarios: {e}")
+        raise Exception(f"Error al buscar sp_listar_con_paginacion_usuarios: \n {e}")
 
 def get_usuario_by_id(id_usuario):
     conn = get_connection()

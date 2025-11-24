@@ -10,7 +10,7 @@ def find_all():
 
 @router.get("/filtro")
 def find_all_with_pagination(keyboard: str | None = "", page: int = 1, elementsPerPages: int = 10):
-    return usuario_controller.find_all_by_keyword_and_pagination(filter=keyboard, pages=page, elementPerPages=elementsPerPages)
+    return usuario_controller.find_all_by_keyword_and_pagination(keyword=keyboard, page=page, elementPerPages=elementsPerPages)
 
 
 
