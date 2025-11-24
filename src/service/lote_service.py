@@ -120,25 +120,30 @@ def update_location(data: ItemTranferir):
         cursor.close()
         conn.close()
 
-
 def find_all_with_pagination(filter_value, page, limit):
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.callproc("sp_listar_lotes", [filter_value, page, limit])
 
-        data = []
-        for result in cursor.stored_results():
-            data = result.fetchall()
+        result_sets = list(cursor.stored_results())
+
+        data = result_sets[0].fetchall()
+
+        metadata = result_sets[1].fetchall()[0]
 
         cursor.close()
         connection.close()
 
-        return data
+        return {
+            "data": data,
+            "metadata": metadata
+        }
 
     except Exception as e:
-        print("Error in paciente_service.find_all_with_pagination:", e)
-        raise Exception("Error al buscar pacientes con paginacion")
+        print("Error in lote_service.find_all_with_pagination:", e)
+        raise Exception("Error al buscar lotes con paginacion")
+
 
 
 def get_lote_posicion_by_id(id_pos: int):

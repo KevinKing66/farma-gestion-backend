@@ -3777,6 +3777,24 @@ BEGIN
         i.descripcion, i.codigo, p.nombre, u.nombre
     ORDER BY l.fecha_vencimiento DESC
     LIMIT p_limit OFFSET v_offset;
+
+    -- METADATA
+    SELECT 
+        COUNT(*) AS total,
+        p_page AS page,
+        p_limit AS limite,
+        CEIL(COUNT(*) / p_limit) AS total_pages
+    FROM lotes l
+    JOIN items i ON i.id_item = l.id_item
+    JOIN proveedores p ON p.id_proveedor = l.id_proveedor
+    LEFT JOIN existencias e ON e.id_lote = l.id_lote
+    LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
+    WHERE
+        p_filtro = '' 
+        OR LOWER(l.codigo_lote) LIKE CONCAT('%', LOWER(p_filtro), '%')
+        OR LOWER(i.descripcion) LIKE CONCAT('%', LOWER(p_filtro), '%')
+        OR LOWER(p.nombre) LIKE CONCAT('%', LOWER(p_filtro), '%')
+        OR LOWER(COALESCE(u.nombre, '')) LIKE CONCAT('%', LOWER(p_filtro), '%');
 END//
 DELIMITER ;
 
