@@ -3303,7 +3303,6 @@ END//
 DELIMITER ;
 
 
-
 DELIMITER //
 CREATE PROCEDURE sp_buscar_medicamento(
     IN p_filtro VARCHAR(100),
@@ -3314,7 +3313,8 @@ BEGIN
     DECLARE v_offset INT;
     SET v_offset = (p_page - 1) * p_limit;
 
-    SELECT 
+    -- RESULTSET 1: DATA -----------------------------------------
+    SELECT
         i.descripcion AS nombre,
         u.nombre AS area,
         l.codigo_lote AS lote,
@@ -3327,29 +3327,47 @@ BEGIN
     JOIN items i ON i.id_item = l.id_item
     LEFT JOIN existencias e ON e.id_lote = l.id_lote
     LEFT JOIN ubicaciones u ON u.id_ubicacion = e.id_ubicacion
-    WHERE 
-        (  
-          (
+    WHERE
+        (
             LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-          OR
-           LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
-           )
-            OR
-          p_filtro = ''
+            OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+            OR p_filtro = ''
         )
-        AND
-          i.tipo_item = 'MEDICAMENTO'
-    GROUP BY 
-        i.descripcion, 
+        AND i.tipo_item = 'MEDICAMENTO'
+    GROUP BY
+        i.descripcion,
         u.nombre,
-        l.codigo_lote, 
-        i.tipo_item, 
+        l.codigo_lote,
+        i.tipo_item,
         l.fecha_vencimiento,
         i.uso_frecuente
     ORDER BY i.descripcion ASC
     LIMIT p_limit OFFSET v_offset;
+
+    -- RESULTSET 2: METADATA --------------------------------------
+    SELECT
+        COUNT(*) AS total,
+        p_page AS page,
+        p_limit AS page_size,          -- <-- YA NO SE LLAMA "limit"
+        CEIL(COUNT(*) / p_limit) AS total_pages
+    FROM (
+        SELECT DISTINCT
+            i.descripcion,
+            l.codigo_lote
+        FROM lotes l
+        JOIN items i ON i.id_item = l.id_item
+        LEFT JOIN existencias e ON e.id_lote = l.id_lote
+        WHERE
+            (
+                LOWER(i.descripcion) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+                OR LOWER(l.codigo_lote) LIKE LOWER(CONCAT('%', p_filtro, '%'))
+                OR p_filtro = ''
+            )
+            AND i.tipo_item = 'MEDICAMENTO'
+    ) AS sub;
 END//
 DELIMITER ;
+
 
 DELIMITER //
 CREATE PROCEDURE sp_crear_medicamento(

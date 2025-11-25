@@ -118,18 +118,27 @@ def update_location(data: ItemTranferir):
 
 
 
-def find_all_medicamento_by_keyword_and_pagination(filter: str, pages: int = 0, elementPerPages: int = 10):
+def find_all_medicamento_by_keyword_and_pagination(keyword: str, page: int = 1, elementPerPages: int = 10):
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.callproc('sp_buscar_medicamento', [filter, pages, elementPerPages])
-        data = []
-        for result in cursor.stored_results():
-            data = result.fetchall()
+        cursor.callproc('sp_buscar_medicamento', [keyword, page, elementPerPages])
+
+        result_sets = list(cursor.stored_results())
+
+        data = result_sets[0].fetchall()
+        metadata = result_sets[1].fetchall()[0]
+
         cursor.close()
         connection.close()
-        return data
+
+        return {
+            "data": data,
+            "metadata": metadata
+        }
+
     except Exception as e:
         print(f"Error en sp_buscar_medicamento: {e}")
         raise Exception("Error al buscar medicamentos en inventario")
+
 
