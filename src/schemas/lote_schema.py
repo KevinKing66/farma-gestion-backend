@@ -23,10 +23,19 @@ class LoteCreate(BaseModel):
     cantidad: int
     id_usuario: int
     motivo: Optional[str] = Field(None, max_length=255)
-class LoteUpdate(LoteBase):
-    id_item: int
-    fecha_vencimiento: date
-    costo_unitario: float
+
+class LoteUpdate(BaseModel):
+    codigo_lote: Optional[str] = None
+    fecha_vencimiento: Optional[date] = None
+    costo_unitario: Optional[float] = None
+    estado: Optional[str] = None 
+    id_item: Optional[int] = None
+    id_proveedor: Optional[int] = None
+    cantidad: Optional[int] = None
+    id_ubicacion: Optional[int] = None
+    id_usuario: int
+    motivo: Optional[str] = None
+
 
 class LoteResponse(LoteBase):
     id_lote: int

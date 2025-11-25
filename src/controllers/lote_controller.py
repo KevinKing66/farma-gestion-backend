@@ -37,8 +37,7 @@ def update(id, data: LoteUpdate):
     try:
         lote_service.update_lote(
             id,
-            data.fecha_vencimiento,
-            data.costo_unitario
+            data
         )
         return {"message": "Lote actualizado correctamente"}
     except Exception as e:

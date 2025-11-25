@@ -65,13 +65,34 @@ def create_lote(lote: LoteCreate):
 
 
 
-def update_lote(id_item, fecha_vencimiento, costo_unitario):
+def update_lote(id_lote: int, data: LoteUpdate):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("CALL sp_actualizar_lote(%s, %s, %s)", (id_item, fecha_vencimiento, costo_unitario))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.callproc("sp_actualizar_lote", [
+            id_lote,
+            data.codigo_lote,
+            data.fecha_vencimiento,
+            data.costo_unitario,
+            data.estado,
+            data.id_item,
+            data.id_proveedor,
+            data.cantidad,
+            data.id_ubicacion,
+            data.id_usuario,
+            data.motivo
+        ])
+
+        for result in cursor.stored_results():
+            return result.fetchall()
+
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cursor.close()
+        conn.close()
 
 
 def delete_lote(id_lote):
