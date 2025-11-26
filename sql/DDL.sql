@@ -1703,11 +1703,16 @@ DELIMITER;
 -- HU-04, RF-05
 DELIMITER //
 CREATE PROCEDURE sp_transferir_stock(
-  IN p_id_lote INT, IN p_id_ubicacion_origen INT, IN p_id_ubicacion_destino INT,
-  IN p_cantidad INT, IN p_id_usuario INT, IN p_motivo VARCHAR(255)
+  IN p_id_lote INT, 
+  IN p_id_ubicacion_origen INT, 
+  IN p_id_ubicacion_destino INT,
+  IN p_cantidad INT, 
+  IN p_id_usuario INT, 
+  IN p_motivo VARCHAR(255)
 )
 BEGIN
   DECLARE v_saldo INT;
+  DECLARE v_saldo_destino INT;
 
   IF p_cantidad <= 0 THEN 
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad debe ser > 0'; 
@@ -1724,15 +1729,39 @@ BEGIN
   WHERE id_lote = p_id_lote AND id_ubicacion = p_id_ubicacion_origen
   FOR UPDATE;
 
-  IF v_saldo IS NULL OR v_saldo < p_cantidad THEN
+  IF v_saldo IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No existe registro de existencias en ORIGEN';
+  END IF;
+
+  IF v_saldo < p_cantidad THEN
     ROLLBACK;
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stock insuficiente para TRANSFERENCIA';
+  END IF;
+
+  UPDATE existencias
+  SET saldo = saldo - p_cantidad
+  WHERE id_lote = p_id_lote AND id_ubicacion = p_id_ubicacion_origen;
+
+  SELECT saldo INTO v_saldo_destino
+  FROM existencias
+  WHERE id_lote = p_id_lote AND id_ubicacion = p_id_ubicacion_destino
+  FOR UPDATE;
+
+  IF v_saldo_destino IS NULL THEN
+      INSERT INTO existencias (id_lote, id_ubicacion, saldo)
+      VALUES (p_id_lote, p_id_ubicacion_destino, p_cantidad);
+  ELSE
+      UPDATE existencias
+      SET saldo = saldo + p_cantidad
+      WHERE id_lote = p_id_lote AND id_ubicacion = p_id_ubicacion_destino;
   END IF;
 
   INSERT INTO movimientos
     (id_lote, id_usuario, tipo, cantidad, id_ubicacion_origen, id_ubicacion_destino, motivo)
   VALUES
-    (p_id_lote, p_id_usuario, 'TRANSFERENCIA', p_cantidad, p_id_ubicacion_origen, p_id_ubicacion_destino, COALESCE(p_motivo,'Reabastecimiento'));
+    (p_id_lote, p_id_usuario, 'TRANSFERENCIA', p_cantidad, 
+     p_id_ubicacion_origen, p_id_ubicacion_destino, COALESCE(p_motivo,'Transferencia'));
 
   COMMIT;
 END//
