@@ -1702,7 +1702,6 @@ DELIMITER;
 
 -- HU-04, RF-05
 DELIMITER //
-DELIMITER //
 CREATE PROCEDURE sp_transferir_stock(
   IN p_id_lote INT, IN p_id_ubicacion_origen INT, IN p_id_ubicacion_destino INT,
   IN p_cantidad INT, IN p_id_usuario INT, IN p_motivo VARCHAR(255)
